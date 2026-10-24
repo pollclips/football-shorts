@@ -5,6 +5,7 @@
 - Is de map leeg, dan genereren we zelf een rechtenvrije beat die elke dag een beetje anders klinkt.
 """
 import hashlib
+import math
 import subprocess
 import wave
 from pathlib import Path
@@ -112,3 +113,89 @@ def synth(key, duration, transitions, out_path):
 def make_music(key, duration, transitions, out_path):
     used = from_library(key, duration, out_path)
     return used or synth(key, duration, transitions, out_path)
+
+
+def sfx(key, duration, impacts, cuts, out_path):
+    """Geluidseffecten (zelf gemaakt, rechtenvrij): diepe 'impact' bij binnenslaande koppen en cijfers,
+    zachte tik bij gewone woorden, 'whoosh' bij elke kleur-wipe. Stereo wav."""
+    rng = np.random.default_rng(_seed(key + "sfx"))
+    n = int(SR * (duration + 0.5))
+    L = np.zeros(n, np.float32)
+    R = np.zeros(n, np.float32)
+
+    def add(sig, start, pan=0.0, gain=1.0):
+        s = int(start * SR)
+        if s < 0:
+            sig, s = sig[-s:], 0
+        e = min(n, s + len(sig))
+        if e <= s:
+            return
+        l, r = math.cos((pan + 1) * math.pi / 4), math.sin((pan + 1) * math.pi / 4)
+        L[s:e] += sig[: e - s] * gain * l * 1.41
+        R[s:e] += sig[: e - s] * gain * r * 1.41
+
+    # impact: dalende sinus (sub) + korte klik + wat ruis
+    it = np.arange(int(0.55 * SR)) / SR
+    boom = np.sin(2 * np.pi * np.cumsum(38 + 110 * np.exp(-it * 18)) / SR) * np.exp(-it * 6.5)
+    click = rng.standard_normal(len(it)) * np.exp(-it * 90)
+    body = np.convolve(rng.standard_normal(len(it)), np.ones(30) / 30, mode="same") * np.exp(-it * 14) * 2.5
+    impact = boom * 0.9 + click * 0.25 + body * 0.4
+    tt = np.arange(int(0.05 * SR)) / SR
+    tick = np.convolve(rng.standard_normal(len(tt)), np.ones(5) / 5, mode="same") * np.exp(-tt * 120)
+
+    for ti, k in impacts:
+        if k >= 0.45:
+            add(impact, ti - 0.01, 0.0, 0.55 * k)
+        else:
+            add(tick, ti, rng.uniform(-0.4, 0.4), 0.18)
+
+    # whoosh: ruis die aanzwelt en van links naar rechts schuift
+    wd = 0.5
+    wt = np.arange(int(wd * SR)) / SR
+    env = np.sin(np.pi * wt / wd) ** 2
+    for tc in cuts:
+        noise = rng.standard_normal(len(wt))
+        k = 6 + int(rng.integers(0, 6))
+        wn = noise - np.convolve(noise, np.ones(k) / k, mode="same")          # helder
+        wl = np.convolve(noise, np.ones(18) / 18, mode="same")                # vol
+        sig = (wn * 0.35 + wl * 1.2) * env
+        half = len(sig) // 2
+        add(sig[:half], tc - wd / 2 - 0.05, -0.6, 0.5)
+        add(sig[half:], tc - 0.05, 0.6, 0.5)
+
+    st = np.stack([L, R], 1)
+    st = np.tanh(st * 1.1)
+    peak = float(np.max(np.abs(st))) or 1.0
+    pcm = (st / peak * 0.85 * 32767).astype(np.int16)
+    with wave.open(str(out_path), "wb") as wf:
+        wf.setnchannels(2)
+        wf.setsampwidth(2)
+        wf.setframerate(SR)
+        wf.writeframes(pcm.tobytes())
+    return out_path
+
+
+def mix(music_wav, voice_wav, out_wav, with_voice=True, music_level=0.26, sfx_wav=None, sfx_level=0.5):
+    """Legt stem (en effecten) over de muziek. Met stem gaat de muziek zachter; daarna luidheid op YouTube-niveau."""
+    inputs = ["-i", str(music_wav)]
+    parts = [f"[0:a]volume={music_level if with_voice else 0.8}[m]"]
+    labels = ["[m]"]
+    idx = 1
+    if with_voice and voice_wav is not None and Path(voice_wav).exists():
+        inputs += ["-i", str(voice_wav)]
+        parts.append(f"[{idx}:a]aresample={SR},pan=stereo|c0=c0|c1=c0,highpass=f=70,"
+                     "acompressor=threshold=-18dB:ratio=3:attack=5:release=80,volume=1.0[v]")
+        labels.append("[v]")
+        idx += 1
+    if sfx_wav is not None and Path(sfx_wav).exists():
+        inputs += ["-i", str(sfx_wav)]
+        parts.append(f"[{idx}:a]volume={sfx_level}[x]")
+        labels.append("[x]")
+        idx += 1
+    if len(labels) == 1:
+        filt = parts[0] + ";[m]loudnorm=I=-14:TP=-1.5:LRA=11[out]"
+    else:
+        filt = ";".join(parts) + ";" + "".join(labels) + \
+               f"amix=inputs={len(labels)}:duration=first:normalize=0,loudnorm=I=-14:TP=-1.5:LRA=11[out]"
+    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", *inputs, "-filter_complex", filt, "-map", "[out]",
+                    "-ar", str(SR), "-ac", "2", str(out_wav)], check=True)
