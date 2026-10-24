@@ -27,6 +27,11 @@ on:
         description: "(enkel preview) ook korte stemvoorbeelden maken"
         type: boolean
         default: false
+      style:
+        description: "vormgeving: broadcast (nieuw) of classic"
+        type: choice
+        options: [broadcast, classic]
+        default: broadcast
 
 permissions:
   contents: write
@@ -44,6 +49,7 @@ jobs:
       FORCE: ${{ inputs.force && '1' || '' }}
       DAY: ${{ inputs.day || '' }}
       VOICE: ${{ inputs.voice || vars.VOICE || 'am_michael' }}
+      STYLE: ${{ inputs.style || vars.STYLE || 'broadcast' }}
       SCHEDULED: ${{ github.event_name == 'schedule' && '1' || '' }}
       PYTHONUNBUFFERED: "1"
     steps:

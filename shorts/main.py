@@ -14,7 +14,7 @@ import sys
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
-from . import music, render, theme, voice
+from . import broadcast, music, render, theme, voice
 from .data import COMPETITIONS, Api, table_rows
 from .story import TZ, build_story, build_table_story, candidates, publish_time
 
@@ -143,39 +143,49 @@ def main():
     print(f"kleuren: {meta['focus_name']}='{fc_text}' {meta['opp_name']}='{oc_text}' -> stijl {th['style']}, "
           f"accent {th['acc']}, opening {th['hook_layout']}")
 
+    # --- vormgeving: 'broadcast' (v3, standaard) of 'classic' (v2)
+    style = (os.environ.get("STYLE", "") or "broadcast").strip()
+    R = broadcast if style == "broadcast" else render
+
     # --- stem + ondertitels (bepaalt ook de duur van elke scène)
     narrator = voice.Narrator()
     voice_wav = OUT / "voice.wav"
-    voice.narrate(story, narrator, voice_wav, render.build_timeline)
+    voice.narrate(story, narrator, voice_wav, R.build_timeline)
     print("stem:", narrator.describe())
 
     name = f"{day.isoformat()}.mp4"
     (OUT / "story.json").write_text(json.dumps({"story": story, "meta": meta, "theme": th},
                                                indent=2, ensure_ascii=False))
-    starts, dur = render.scene_starts(story)
-    music_wav, mix_wav = OUT / "music.wav", OUT / "mix.wav"
-    used = music.make_music(day.isoformat(), dur, starts, music_wav)
-    music.mix(music_wav, voice_wav, mix_wav, with_voice=narrator.active)
-    print(f"muziek: {used} · duur {dur:.1f} s")
+    music_wav, mix_wav, sfx_wav = OUT / "music.wav", OUT / "mix.wav", None
+    if R is broadcast:
+        _, shots, dur, cuts, impacts = broadcast.plan(story, th)
+        starts = [s.t0 for s in shots]
+        used = music.make_music(day.isoformat(), dur, [0.0], music_wav)   # whooshes zitten in de effecten
+        sfx_wav = music.sfx(day.isoformat(), dur, impacts, cuts, OUT / "sfx.wav")
+    else:
+        starts, dur = render.scene_starts(story)
+        used = music.make_music(day.isoformat(), dur, starts, music_wav)
+    music.mix(music_wav, voice_wav, mix_wav, with_voice=narrator.active, sfx_wav=sfx_wav)
+    print(f"stijl: {style} · muziek: {used} · duur {dur:.1f} s · shots {len(starts)}")
 
     if "--frames" in sys.argv:
-        print(render.render(story, str(OUT / "preview"), mix_wav, th, frames_at=[s + 0.6 for s in starts] + [0.0]))
+        print(R.render(story, str(OUT / "preview"), mix_wav, th, frames_at=[s + 0.6 for s in starts] + [0.0]))
         return
     if mode == "dry-run":
-        render.render(story, OUT / "latest.mp4", mix_wav, th)
+        R.render(story, OUT / "latest.mp4", mix_wav, th)
         print("proefvideo (niet verstuurd):", OUT / "latest.mp4")
         return
     if mode == "preview":
         PREVIEWS.mkdir(exist_ok=True)
         target = PREVIEWS / f"{day.isoformat()}-{narrator.voice if narrator.active else 'novoice'}.mp4"
-        render.render(story, target, mix_wav, th)
+        R.render(story, target, mix_wav, th)
         shutil.copy(target, OUT / "latest.mp4")
         shutil.copy(OUT / "story.json", PREVIEWS / f"{day.isoformat()}-story.json")
         cleanup(day)
         print("preview:", target, f"{target.stat().st_size / 1e6:.1f} MB")
         return
 
-    render.render(story, VIDEOS / name, mix_wav, th)
+    R.render(story, VIDEOS / name, mix_wav, th)
     shutil.copy(VIDEOS / name, OUT / "latest.mp4")
     print("video:", VIDEOS / name, f"{(VIDEOS / name).stat().st_size / 1e6:.1f} MB")
 

@@ -157,9 +157,13 @@ def narrate(story, narrator, out_wav, build_timeline):
     per_scene = []
     for sc in story["scenes"]:
         clips, t = [], LEAD.get(sc["type"], LEAD_DEFAULT)
+        sc["lines"] = []
         for line in sc.get("say", []):
             audio, ws = narrator.speak(line)
             clips.append((t, audio, ws))
+            # per zin: tijden t.o.v. het begin van de scène (voor de broadcast-regie)
+            sc["lines"].append({"t0": round(t, 3), "t1": round(t + len(audio) / SR, 3),
+                                "words": [(d, round(t + a, 3), round(t + b, 3)) for d, a, b in ws]})
             t += len(audio) / SR + GAP
         voice_end = (t - GAP) if clips else 0.0
         sc["dur"] = round(max(MIN_DUR.get(sc["type"], 3.0), voice_end + TAIL), 2)

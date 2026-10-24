@@ -119,6 +119,7 @@ def build(focus_cols, opp_cols, rng):
     opp_tint = mix(opp_vivid[0] if opp_vivid else (40, 48, 64), base_dark, 0.84)
     on_acc = (9, 13, 22) if lum(acc) > 0.3 else (250, 250, 250)
     return {
+        "fprim": primary, "fsec": second, "oprim": opp_vivid[0] if opp_vivid else (opp_cols[0] if opp_cols else None),
         "bg": bg, "glow": glow, "acc": acc, "foc": acc, "opp": opp, "on_acc": on_acc,
         "stripe_a": stripe_a, "stripe_b": stripe_b, "opp_tint": opp_tint,
         "style": STYLES[rng.randrange(len(STYLES))],
