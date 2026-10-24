@@ -35,6 +35,8 @@ NAME_FIX = {
     "Man United": "Man United",
     "Atleti": "Atlético",
     "Barça": "Barcelona",
+    "M'gladbach": "Gladbach",
+    "Sl. Bratislava": "Slovan Bratislava",
 }
 
 
@@ -74,6 +76,14 @@ class Api:
     def standings(self, code):
         js = self.get(f"/competitions/{code}/standings", None, f"standings_{code}.json")
         return (js or {}).get("standings", [])
+
+    def team_colors(self, team_id):
+        """Clubkleuren als tekst, bv. "Sky Blue / White" (leeg als onbekend)."""
+        try:
+            js = self.get(f"/teams/{team_id}", None, f"team_{team_id}.json")
+        except requests.RequestException:
+            return ""
+        return (js or {}).get("clubColors") or ""
 
     def next_match(self, team_id, date_from, date_to):
         try:
