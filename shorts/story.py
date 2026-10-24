@@ -309,7 +309,7 @@ def build_story(c, day, next_match, all_matches, rng):
         elif Fr["pos"] > 1:
             lead = table[0]
             badge, badge_text = f"-{lead['pts'] - Fr['pts']}", f"points behind {lead['name']}"
-        scenes.append({"type": "table", "tag": "THE TABLE", "sub": f"{comp} · after today",
+        scenes.append({"type": "table", "tag": "THE TABLE", "sub": f"{comp} · latest",
                        "rows": rows, "badge": badge, "badge_text": badge_text, "foot": foot,
                        "say": _table_lines(F, Fr, table, comp)})
     elif Fr and Or:

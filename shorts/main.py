@@ -126,45 +126,54 @@ def main():
     if not trial and done and not os.environ.get("FORCE"):
         return skip(f"Voor {pub_day} {slot}:00 is er al een video; stop (FORCE=1 om toch opnieuw te maken).")
     recent = set() if trial else {t for h in history[-4:] for t in h.get("teams", [])}
-    used_ids = {h["match"] for h in history[-12:] if h.get("match")}
-    used_pairs = {tuple(h.get("teams", [])) for h in history[-12:] if h.get("date") == day.isoformat()}
+    used_ids = {h["match"] for h in history[-16:] if h.get("match")}
+    used_pairs = {(h.get("date"), tuple(h.get("teams", []))) for h in history[-16:]}
 
+    # De gratis data zet uitslagen soms pas uren later op 'afgelopen'. Daarom kijken we ook naar de dag ervoor
+    # (iets lager gewaardeerd): zo is er altijd een echt wedstrijdverhaal als dat er is.
     api = Api()
-    raw = api.matches(day.isoformat(), (day + timedelta(days=1)).isoformat())
-    matches = [m for m in raw
-               if datetime.fromisoformat(m["utcDate"].replace("Z", "+00:00")).astimezone(TZ).date() == day]
-    finished = [m for m in matches if m.get("status") == "FINISHED" and m["competition"]["code"] in COMPETITIONS]
-    # diagnose: welke status hebben de wedstrijden die al lang begonnen zijn?
-    from collections import Counter
-    old = [m for m in matches if now - datetime.fromisoformat(m["utcDate"].replace("Z", "+00:00"))
-           > timedelta(hours=2, minutes=30)]
-    print("status (alle):", dict(Counter(m.get("status") for m in matches)))
-    print("status (>2u30 na aftrap):", dict(Counter(m.get("status") for m in old)))
-    for m in old[:4]:
-        print("  voorbeeld:", m["competition"]["code"], m["homeTeam"].get("shortName"), "-",
-              m["awayTeam"].get("shortName"), m.get("status"), m["score"].get("fullTime"),
-              m["score"].get("halfTime"), m.get("lastUpdated"))
-    fresh = [m for m in finished if m["id"] not in used_ids
-             and (m["homeTeam"]["id"], m["awayTeam"]["id"]) not in used_pairs]
-    print(f"{day}: {len(matches)} wedstrijden, {len(finished)} afgelopen, {len(fresh)} nog niet gebruikt")
+    days = [day, day - timedelta(days=1)]
+    weight = {days[0]: 1.0, days[1]: 0.75}
+    finished_by_day, fresh = {}, []
+    for d in days:
+        raw = api.matches(d.isoformat(), (d + timedelta(days=1)).isoformat())
+        ms = [m for m in raw
+              if datetime.fromisoformat(m["utcDate"].replace("Z", "+00:00")).astimezone(TZ).date() == d]
+        fin = [m for m in ms if m.get("status") == "FINISHED" and m["competition"]["code"] in COMPETITIONS]
+        fr = [m for m in fin if m["id"] not in used_ids
+              and (d.isoformat(), (m["homeTeam"]["id"], m["awayTeam"]["id"])) not in used_pairs]
+        st = {}
+        for m in ms:
+            st[m.get("status")] = st.get(m.get("status"), 0) + 1
+        print(f"{d}: {len(ms)} wedstrijden {st}, {len(fin)} afgelopen, {len(fr)} nog niet gebruikt")
+        finished_by_day[d] = fin
+        fresh += [(d, m) for m in fr]
 
-    codes = sorted({m["competition"]["code"] for m in fresh}, key=lambda c: -COMPETITIONS[c][2])[:6]
+    codes = sorted({m["competition"]["code"] for _, m in fresh}, key=lambda c: -COMPETITIONS[c][2])[:6]
     tables = {}
     for code in codes:
         st = api.standings(code)
-        ids = {m[s]["id"] for m in fresh if m["competition"]["code"] == code for s in ("homeTeam", "awayTeam")}
+        ids = {m[s]["id"] for _, m in fresh if m["competition"]["code"] == code for s in ("homeTeam", "awayTeam")}
         tables[code] = {tid: table_rows(st, tid) for tid in ids}
 
     rng = random.Random(f"{day.isoformat()}-{slot}")
-    nxt_from, nxt_to = (day + timedelta(days=1)).isoformat(), (day + timedelta(days=21)).isoformat()
-    cands = candidates(fresh, tables, recent)
+    # volgende match: vanaf morgen (de data van vandaag kan nog achterlopen)
+    nxt_from, nxt_to = (local.date() + timedelta(days=1)).isoformat(), (local.date() + timedelta(days=21)).isoformat()
+    cands = []
+    for d in days:
+        for c in candidates([m for dd, m in fresh if dd == d], tables, recent):
+            c["score"] *= weight[d]
+            c["day"] = d
+            cands.append(c)
+    cands.sort(key=lambda c: c["score"], reverse=True)
     if cands:
         best = cands[0]
-        print("gekozen:", best["angle"], best["match"]["homeTeam"]["name"], "-", best["match"]["awayTeam"]["name"],
-              f"(score {best['score']:.2f})")
+        day = best["day"]
+        print("gekozen:", day, best["angle"], best["match"]["homeTeam"]["name"], "-",
+              best["match"]["awayTeam"]["name"], f"(score {best['score']:.2f})")
         focus_team = best["match"]["homeTeam" if best["focus"] == "home" else "awayTeam"]["id"]
         nxt = api.next_match(focus_team, nxt_from, nxt_to)
-        story, meta = build_story(best, day, nxt, finished, rng)
+        story, meta = build_story(best, day, nxt, finished_by_day[day], rng)
         meta["match"] = best["match"]["id"]
     else:
         start = (day.toordinal() * 2 + (0 if slot == "13" else 1)) % len(FALLBACK_COMPS)
