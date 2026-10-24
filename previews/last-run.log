@@ -1,8 +1,14 @@
 slot 22:00 · wedstrijddag 2026-10-24 · online op 2026-10-24
-2026-10-24: 41 wedstrijden, 0 afgelopen, 0 nog niet gebruikt
-Geen nieuwe afgelopen wedstrijden -> klassement-verhaal BL1
-kleuren: Dortmund='Black / Yellow' Bayern='Red / White / Blue' -> stijl glow
-[0;93m2026-10-24 20:40:03.773526045 [W:onnxruntime:Default, device_discovery.cc:95 GetPciBusId] Skipping pci_bus_id for PCI path at "/sys/devices/LNXSYSTM:00/LNXSYBUS:00/ACPI0004:00/VMBUS:00/5620e0c7-8062-4dce-aeb7-520c7ef76171" because filename "5620e0c7-8062-4dce-aeb7-520c7ef76171" did not match expected pattern of [0-9a-f]+:[0-9a-f]+:[0-9a-f]+[.][0-9a-f]+[m
-stem: Kokoro am_michael x1.12 (woordtiming uit het model; exact 7, geschat 0)
-stijl: broadcast · muziek: synth 114 bpm · duur 18.7 s · shots 6
-preview: /home/runner/work/football-shorts/football-shorts/previews/2026-10-24-22u-am_michael.mp4 14.1 MB
+status (alle): {'TIMED': 25, 'FINISHED': 8, 'IN_PLAY': 8}
+status (>2u30 na aftrap): {'TIMED': 23, 'FINISHED': 8}
+  voorbeeld: ELC Charlton - Norwich TIMED {'home': None, 'away': None} {'home': None, 'away': None} 2026-10-24T13:41:32Z
+  voorbeeld: ELC Portsmouth - Millwall TIMED {'home': None, 'away': None} {'home': None, 'away': None} 2026-10-24T13:35:20Z
+  voorbeeld: PL Aston Villa - Man City TIMED {'home': None, 'away': None} {'home': None, 'away': None} 2026-10-24T13:37:46Z
+  voorbeeld: ELC Sheffield Utd - Derby County TIMED {'home': None, 'away': None} {'home': None, 'away': None} 2026-10-24T13:41:21Z
+2026-10-24: 41 wedstrijden, 8 afgelopen, 8 nog niet gebruikt
+gekozen: upset Cardiff City FC - Birmingham City FC (score 2.40)
+kleuren: Cardiff='Blue / White' Birmingham='Blue / White' -> stijl stripes
+[0;93m2026-10-24 20:44:17.705659473 [W:onnxruntime:Default, device_discovery.cc:95 GetPciBusId] Skipping pci_bus_id for PCI path at "/sys/devices/LNXSYSTM:00/LNXSYBUS:00/ACPI0004:00/MSFT1000:00/5620e0c7-8062-4dce-aeb7-520c7ef76171" because filename "5620e0c7-8062-4dce-aeb7-520c7ef76171" did not match expected pattern of [0-9a-f]+:[0-9a-f]+:[0-9a-f]+[.][0-9a-f]+[m
+stem: Kokoro am_michael x1.12 (woordtiming uit het model; exact 6, geschat 2)
+stijl: classic · muziek: synth 114 bpm · duur 18.9 s · shots 5
+preview: /home/runner/work/football-shorts/football-shorts/previews/2026-10-24-22u-am_michael.mp4 2.0 MB
