@@ -1,0 +1,14 @@
+2026-10-23: 9 wedstrijden, 8 afgelopen
+gekozen: first_win VfB Stuttgart - Borussia Mönchengladbach (score 3.15)
+kleuren: Gladbach='Black / White / Green' Stuttgart='White / Red' -> stijl stripes, accent (51, 159, 105), opening word_top
+[0;93m2026-10-24 18:40:24.067585526 [W:onnxruntime:Default, device_discovery.cc:95 GetPciBusId] Skipping pci_bus_id for PCI path at "/sys/devices/LNXSYSTM:00/LNXSYBUS:00/ACPI0004:00/MSFT1000:00/5620e0c7-8062-4dce-aeb7-520c7ef76171" because filename "5620e0c7-8062-4dce-aeb7-520c7ef76171" did not match expected pattern of [0-9a-f]+:[0-9a-f]+:[0-9a-f]+[.][0-9a-f]+[m
+stem: Kokoro am_michael x1.12 (woordtiming uit het model; exact 8, geschat 1)
+muziek: synth 119 bpm · duur 21.5 s
+preview: /home/runner/work/football-shorts/football-shorts/previews/2026-10-23-am_michael.mp4 2.1 MB
+[0;93m2026-10-24 18:40:54.883584525 [W:onnxruntime:Default, device_discovery.cc:95 GetPciBusId] Skipping pci_bus_id for PCI path at "/sys/devices/LNXSYSTM:00/LNXSYBUS:00/ACPI0004:00/MSFT1000:00/5620e0c7-8062-4dce-aeb7-520c7ef76171" because filename "5620e0c7-8062-4dce-aeb7-520c7ef76171" did not match expected pattern of [0-9a-f]+:[0-9a-f]+:[0-9a-f]+[.][0-9a-f]+[m
+stemvoorbeeld: /home/runner/work/football-shorts/football-shorts/previews/voices/am_michael.m4a
+stemvoorbeeld: /home/runner/work/football-shorts/football-shorts/previews/voices/am_fenrir.m4a
+stemvoorbeeld: /home/runner/work/football-shorts/football-shorts/previews/voices/bm_george.m4a
+stemvoorbeeld: /home/runner/work/football-shorts/football-shorts/previews/voices/bm_lewis.m4a
+stemvoorbeeld: /home/runner/work/football-shorts/football-shorts/previews/voices/af_heart.m4a
+stemvoorbeeld: /home/runner/work/football-shorts/football-shorts/previews/voices/bf_emma.m4a
