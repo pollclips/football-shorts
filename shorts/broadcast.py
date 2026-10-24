@@ -211,6 +211,9 @@ class Backdrop:
             dx = (x - sx) - (y * ang * 0.35)
             beam = np.exp(-(dx ** 2) / (0.006 + 0.03 * y)) * np.clip(1.1 - y * 1.1, 0, 1)
             base += beam[..., None] * 34
+        # lichte, vaste korrel in de achtergrond (bewegende korrel maakt het bestand 5x groter)
+        grain = rng.integers(-5, 6, (H // 2, W // 2)).astype(np.float32)
+        base += np.repeat(np.repeat(grain, 2, 0), 2, 1)[..., None]
         self.base = Image.fromarray(np.clip(base, 0, 255).astype(np.uint8), "RGB").convert("RGBA")
         # fijne schuine lijntjes (scrollen)
         tex = Image.new("RGBA", (W + 400, H + 400), (0, 0, 0, 0))
@@ -219,8 +222,7 @@ class Backdrop:
             x0 = k * 34
             d.line([(x0, 0), (x0 + (H + 400) * 0.45, H + 400)], fill=(255, 255, 255, 9), width=3)
         self.tex = tex
-        # korrel + vignet
-        self.grain = [rng.integers(-9, 10, (H // 2, W // 2), dtype=np.int16) for _ in range(6)]
+        # vignet
         vig = 1 - 0.42 * np.clip(((x - 0.5) ** 2 * 1.3 + (y - 0.47) ** 2) * 1.7, 0, 1)
         self.vig = vig.astype(np.float32)[..., None]
 
@@ -247,11 +249,8 @@ class Backdrop:
         return img
 
     def finish(self, arr, i):
-        """Vignet en korrel op een uint8-array (H, W, 3)."""
-        a = arr.astype(np.float32) * self.vig
-        g = self.grain[i % len(self.grain)]
-        g = np.repeat(np.repeat(g, 2, 0), 2, 1)[..., None]
-        return np.clip(a + g, 0, 255).astype(np.uint8)
+        """Vignet op een uint8-array (H, W, 3)."""
+        return (arr.astype(np.float32) * self.vig).astype(np.uint8)
 
 
 # ------------------------------------------------------------------ shots
@@ -711,7 +710,8 @@ def render(story, out_path, audio_path, th=None, frames_at=None):
     n = int(total * FPS)
     cmd = ["ffmpeg", "-y", "-loglevel", "error", "-f", "rawvideo", "-pix_fmt", "rgb24",
            "-s", f"{W}x{H}", "-r", str(FPS), "-i", "-", "-i", str(audio_path),
-           "-c:v", "libx264", "-preset", "veryfast", "-crf", "19", "-pix_fmt", "yuv420p",
+           "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-maxrate", "10M", "-bufsize", "20M",
+           "-pix_fmt", "yuv420p",
            "-c:a", "aac", "-b:a", "192k", "-shortest", "-movflags", "+faststart", str(out_path)]
     p = subprocess.Popen(cmd, stdin=subprocess.PIPE)
     for i in range(n):
