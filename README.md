@@ -4,7 +4,8 @@ Elke avond om **23u20 (Brusselse tijd)** gebeurt dit vanzelf:
 
 1. **GitHub Actions** haalt de uitslagen en standen van de dag op bij football-data.org (gratis).
 2. Het script kiest het sterkste verhaal: perfecte reeks, comeback, verrassing, topper, doelpuntenfestijn, eerste zege …
-3. Het maakt een Engelse Short van 1080×1920 met animaties en muziek.
+3. Het maakt een Engelse Short van 1080×1920: een stem vertelt het verhaal, grote ondertitels lichten
+   woord per woord op, en de kleuren volgen de club in de kijker (de stijl wisselt elke dag).
 4. De video wordt in deze repository bewaard en doorgestuurd naar **Make**.
 5. Make zet hem op YouTube, ingepland voor **00:00** (privé tot dat moment, daarna publiek).
 
@@ -50,13 +51,24 @@ Repository → **Settings → Secrets and variables → Actions → New reposito
 - `auto` – video van vandaag maken en posten
 - `test` – de voorbeeldvideo (Man City 7 from 7) naar Make sturen
 - `dry-run` – enkel maken; de video staat dan als download onder de run (*Artifacts*)
+- `preview` – maken en bewaren in `previews/` (niet posten); met `day` kies je een andere dag,
+  met `samples` komen er korte stemvoorbeelden bij in `previews/voices/`
 - `force` aanvinken – opnieuw maken, ook als er vandaag al een video is
+
+## Stem
+De voice-over komt van **Kokoro** (open-source, draait gratis in GitHub Actions; het model wordt één keer
+gedownload en daarna bewaard in de cache). Standaardstem: `am_michael`.
+Andere stem kiezen voor elke video: **Settings → Secrets and variables → Actions → Variables →
+New repository variable**, naam `VOICE`, waarde bv. `bm_george` (Brits) of `af_heart`.
+Lukt de stem een keer niet, dan wordt de video toch gemaakt (met ondertitels, zonder stem).
 
 ## Muziek
 Zet nummers uit de gratis YouTube Audiotheek in `music/`. Leeg = zelfgemaakte rechtenvrije beat.
+Met stem speelt de muziek zachter op de achtergrond.
 
 ## Mappen
-- `shorts/` – de code (data, verhaal, video, muziek, verzenden)
+- `shorts/` – de code (data, verhaal, stem, kleuren, video, muziek, verzenden)
+- `previews/` – proefvideo's (enkel de laatste 6 blijven staan)
 - `videos/` – de gemaakte video's (ouder dan 14 dagen worden automatisch verwijderd)
 - `history.json` – welke verhalen al gebruikt zijn (om herhaling te vermijden)
 - `samples/test_short.mp4` – voorbeeldvideo voor de koppeltest
