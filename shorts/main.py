@@ -134,6 +134,16 @@ def main():
     matches = [m for m in raw
                if datetime.fromisoformat(m["utcDate"].replace("Z", "+00:00")).astimezone(TZ).date() == day]
     finished = [m for m in matches if m.get("status") == "FINISHED" and m["competition"]["code"] in COMPETITIONS]
+    # diagnose: welke status hebben de wedstrijden die al lang begonnen zijn?
+    from collections import Counter
+    old = [m for m in matches if now - datetime.fromisoformat(m["utcDate"].replace("Z", "+00:00"))
+           > timedelta(hours=2, minutes=30)]
+    print("status (alle):", dict(Counter(m.get("status") for m in matches)))
+    print("status (>2u30 na aftrap):", dict(Counter(m.get("status") for m in old)))
+    for m in old[:4]:
+        print("  voorbeeld:", m["competition"]["code"], m["homeTeam"].get("shortName"), "-",
+              m["awayTeam"].get("shortName"), m.get("status"), m["score"].get("fullTime"),
+              m["score"].get("halfTime"), m.get("lastUpdated"))
     fresh = [m for m in finished if m["id"] not in used_ids
              and (m["homeTeam"]["id"], m["awayTeam"]["id"]) not in used_pairs]
     print(f"{day}: {len(matches)} wedstrijden, {len(finished)} afgelopen, {len(fresh)} nog niet gebruikt")
