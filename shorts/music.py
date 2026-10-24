@@ -112,3 +112,17 @@ def synth(key, duration, transitions, out_path):
 def make_music(key, duration, transitions, out_path):
     used = from_library(key, duration, out_path)
     return used or synth(key, duration, transitions, out_path)
+
+
+def mix(music_wav, voice_wav, out_wav, with_voice=True, music_level=0.26):
+    """Legt de stem over de muziek. Met stem gaat de muziek zachter (achtergrond); daarna luidheid op YouTube-niveau."""
+    if not with_voice or voice_wav is None or not Path(voice_wav).exists():
+        subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(music_wav), "-af",
+                        "loudnorm=I=-14:TP=-1.5:LRA=11", "-ar", str(SR), "-ac", "2", str(out_wav)], check=True)
+        return
+    filt = (f"[0:a]volume={music_level}[m];"
+            f"[1:a]aresample={SR},pan=stereo|c0=c0|c1=c0,highpass=f=70,"
+            "acompressor=threshold=-18dB:ratio=3:attack=5:release=80,volume=1.0[v];"
+            "[m][v]amix=inputs=2:duration=first:normalize=0,loudnorm=I=-14:TP=-1.5:LRA=11[out]")
+    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(music_wav), "-i", str(voice_wav),
+                    "-filter_complex", filt, "-map", "[out]", "-ar", str(SR), "-ac", "2", str(out_wav)], check=True)

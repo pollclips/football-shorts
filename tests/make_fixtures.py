@@ -29,4 +29,8 @@ table = [{"position": i + 1, "team": team(r[0]), "playedGames": r[1], "won": r[2
 nxt = {"id": 1, "utcDate": "2026-10-24T11:30:00Z", "status": "TIMED", "homeTeam": team(58), "awayTeam": team(65),
        "competition": {"code": "PL"}, "score": {"fullTime": {"home": None, "away": None}}}
 (out / "next_65.json").write_text(json.dumps({"matches": [nxt]}))
+COLORS = {65: "Sky Blue / White", 349: "Blue / White", 64: "Red / White", 61: "Royal Blue / White",
+          58: "Claret / Sky Blue", 57: "Red / White", 67: "Black / White"}
+for tid, cc in COLORS.items():
+    (out / f"team_{tid}.json").write_text(json.dumps({"id": tid, "name": T[tid], "clubColors": cc}))
 print("fixtures in", out)

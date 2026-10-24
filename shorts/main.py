@@ -1,26 +1,30 @@
-"""Dagelijkse run: data ophalen -> verhaal kiezen -> video maken -> payload voor Make klaarzetten.
+"""Dagelijkse run: data ophalen -> verhaal kiezen -> stem + video maken -> payload voor Make klaarzetten.
 
-MODE=auto     (standaard) nieuwe video van vandaag
+MODE=auto     (standaard) nieuwe video van vandaag, wordt doorgestuurd naar Make
 MODE=test     stuurt de voorbeeldvideo samples/test_short.mp4 (eerste koppeltest met Make)
-MODE=dry-run  maakt de video maar stuurt niets door (de workflow slaat het verzenden over)
+MODE=dry-run  maakt de video maar stuurt niets door (download onder de run, 'Artifacts')
+MODE=preview  maakt de video, bewaart hem in previews/ in de repository en stuurt niets door
+DAY=JJJJ-MM-DD  (enkel bij dry-run/preview) een andere dag gebruiken, bv. om te vergelijken
 """
 import json
 import os
 import random
 import shutil
 import sys
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
-from . import music, render
+from . import music, render, theme, voice
 from .data import COMPETITIONS, Api, table_rows
 from .story import TZ, build_story, build_table_story, candidates, publish_time
 
 ROOT = Path(__file__).resolve().parent.parent
 VIDEOS = ROOT / "videos"
+PREVIEWS = ROOT / "previews"
 OUT = ROOT / "out"
 HISTORY = ROOT / "history.json"
 KEEP_DAYS = 14
+KEEP_PREVIEWS = 6
 
 
 def video_url(name):
@@ -54,6 +58,15 @@ def cleanup(today):
         if (today - d).days > KEEP_DAYS:
             p.unlink()
             print("opgeruimd:", p.name)
+    old = sorted(PREVIEWS.glob("*.mp4"), key=lambda p: p.stat().st_mtime)[:-KEEP_PREVIEWS] if PREVIEWS.exists() else []
+    for p in old:
+        p.unlink()
+
+
+def skip(msg):
+    print(msg)
+    OUT.mkdir(exist_ok=True)
+    (OUT / "skip").write_text("1")
 
 
 def main():
@@ -64,15 +77,16 @@ def main():
     local = now.astimezone(TZ)
     OUT.mkdir(exist_ok=True)
     VIDEOS.mkdir(exist_ok=True)
+    trial = mode in ("dry-run", "preview")
 
     # GitHub kent geen tijdzones: er staan twee geplande starts (zomer- en winteruur).
     # Enkel de start die rond 23u20 Brusselse tijd valt, gaat door.
     if os.environ.get("SCHEDULED") and not (local.hour == 23 or local.hour < 2):
-        print(f"Geplande start om {local:%H:%M} Brusselse tijd valt buiten het venster; overslaan.")
-        (OUT / "skip").write_text("1")
-        return
+        return skip(f"Geplande start om {local:%H:%M} Brusselse tijd valt buiten het venster; overslaan.")
     # een vertraagde run na middernacht hoort nog bij de vorige dag
     day = (local - timedelta(hours=3)).date() if local.hour < 3 else local.date()
+    if trial and os.environ.get("DAY", "").strip():
+        day = date.fromisoformat(os.environ["DAY"].strip())
 
     if mode == "test":
         name = f"{day.isoformat()}-test.mp4"
@@ -85,19 +99,16 @@ def main():
         return
 
     history = json.loads(HISTORY.read_text()) if HISTORY.exists() else []
-    if any(h.get("date") == day.isoformat() for h in history) and not os.environ.get("FORCE"):
-        print("Vandaag is er al een video gemaakt; stop (zet FORCE=1 om toch opnieuw te maken).")
-        Path(OUT).mkdir(exist_ok=True)
-        (OUT / "skip").write_text("1")
-        return
-    recent = {t for h in history[-3:] for t in h.get("teams", [])}
+    if not trial and any(h.get("date") == day.isoformat() for h in history) and not os.environ.get("FORCE"):
+        return skip("Vandaag is er al een video gemaakt; stop (zet FORCE=1 om toch opnieuw te maken).")
+    recent = set() if trial else {t for h in history[-3:] for t in h.get("teams", [])}
 
     api = Api()
     raw = api.matches(day.isoformat(), (day + timedelta(days=1)).isoformat())
     matches = [m for m in raw
                if datetime.fromisoformat(m["utcDate"].replace("Z", "+00:00")).astimezone(TZ).date() == day]
     finished = [m for m in matches if m.get("status") == "FINISHED" and m["competition"]["code"] in COMPETITIONS]
-    print(f"{len(matches)} wedstrijden vandaag, {len(finished)} afgelopen")
+    print(f"{day}: {len(matches)} wedstrijden, {len(finished)} afgelopen")
 
     codes = sorted({m["competition"]["code"] for m in finished}, key=lambda c: -COMPETITIONS[c][2])[:6]
     tables = {}
@@ -120,28 +131,51 @@ def main():
         print("Geen afgelopen wedstrijden vandaag -> reserveverhaal over de titelstrijd")
         table = table_rows(api.standings("PL"))
         if len(table) < 2:
-            print("Ook geen klassement beschikbaar; vandaag geen video.")
-            OUT.mkdir(exist_ok=True)
-            (OUT / "skip").write_text("1")
-            return
+            return skip("Ook geen klassement beschikbaar; vandaag geen video.")
         nxt = api.next_match(table[0]["id"], nxt_from, nxt_to)
-        story, meta = build_table_story("PL", table, day, nxt, rng)
+        story, meta = build_story_fallback(table, day, nxt, rng)
+
+    # --- clubkleuren -> thema (wisselt per video)
+    fc_text = api.team_colors(meta["focus_team"])
+    oc_text = api.team_colors(meta["opp_team"])
+    th = theme.build(theme.team_palette(fc_text, meta["focus_name"]),
+                     theme.team_palette(oc_text, meta["opp_name"]), rng)
+    print(f"kleuren: {meta['focus_name']}='{fc_text}' {meta['opp_name']}='{oc_text}' -> stijl {th['style']}, "
+          f"accent {th['acc']}, opening {th['hook_layout']}")
+
+    # --- stem + ondertitels (bepaalt ook de duur van elke scène)
+    narrator = voice.Narrator()
+    voice_wav = OUT / "voice.wav"
+    voice.narrate(story, narrator, voice_wav, render.build_timeline)
+    print("stem:", narrator.describe())
 
     name = f"{day.isoformat()}.mp4"
-    OUT.mkdir(exist_ok=True)
-    (OUT / "story.json").write_text(json.dumps({"story": story, "meta": meta}, indent=2, ensure_ascii=False))
+    (OUT / "story.json").write_text(json.dumps({"story": story, "meta": meta, "theme": th},
+                                               indent=2, ensure_ascii=False))
     starts, dur = render.scene_starts(story)
-    wav = OUT / "music.wav"
-    used = music.make_music(day.isoformat(), dur, starts, wav)
-    print("muziek:", used)
+    music_wav, mix_wav = OUT / "music.wav", OUT / "mix.wav"
+    used = music.make_music(day.isoformat(), dur, starts, music_wav)
+    music.mix(music_wav, voice_wav, mix_wav, with_voice=narrator.active)
+    print(f"muziek: {used} · duur {dur:.1f} s")
+
     if "--frames" in sys.argv:
-        print(render.render(story, str(OUT / "preview"), wav, frames_at=[s + 2.2 for s in starts]))
+        print(render.render(story, str(OUT / "preview"), mix_wav, th, frames_at=[s + 0.6 for s in starts] + [0.0]))
         return
     if mode == "dry-run":
-        render.render(story, OUT / "latest.mp4", wav)
+        render.render(story, OUT / "latest.mp4", mix_wav, th)
         print("proefvideo (niet verstuurd):", OUT / "latest.mp4")
         return
-    render.render(story, VIDEOS / name, wav)
+    if mode == "preview":
+        PREVIEWS.mkdir(exist_ok=True)
+        target = PREVIEWS / f"{day.isoformat()}-{narrator.voice if narrator.active else 'novoice'}.mp4"
+        render.render(story, target, mix_wav, th)
+        shutil.copy(target, OUT / "latest.mp4")
+        shutil.copy(OUT / "story.json", PREVIEWS / f"{day.isoformat()}-story.json")
+        cleanup(day)
+        print("preview:", target, f"{target.stat().st_size / 1e6:.1f} MB")
+        return
+
+    render.render(story, VIDEOS / name, mix_wav, th)
     shutil.copy(VIDEOS / name, OUT / "latest.mp4")
     print("video:", VIDEOS / name, f"{(VIDEOS / name).stat().st_size / 1e6:.1f} MB")
 
@@ -150,6 +184,10 @@ def main():
     HISTORY.write_text(json.dumps(history[-60:], indent=2, ensure_ascii=False))
     cleanup(day)
     write_payload(name, meta, now)
+
+
+def build_story_fallback(table, day, nxt, rng):
+    return build_table_story("PL", table, day, nxt, rng)
 
 
 if __name__ == "__main__":
