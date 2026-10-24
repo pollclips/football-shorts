@@ -1,7 +1,8 @@
-2026-10-23: 9 wedstrijden, 8 afgelopen
-gekozen: first_win VfB Stuttgart - Borussia Mönchengladbach (score 3.15)
-kleuren: Gladbach='Black / White / Green' Stuttgart='White / Red' -> stijl stripes, accent (51, 159, 105), opening word_top
-[0;93m2026-10-24 20:03:33.652236962 [W:onnxruntime:Default, device_discovery.cc:95 GetPciBusId] Skipping pci_bus_id for PCI path at "/sys/devices/LNXSYSTM:00/LNXSYBUS:00/ACPI0004:00/MSFT1000:00/5620e0c7-8062-4dce-aeb7-520c7ef76171" because filename "5620e0c7-8062-4dce-aeb7-520c7ef76171" did not match expected pattern of [0-9a-f]+:[0-9a-f]+:[0-9a-f]+[.][0-9a-f]+[m
-stem: Kokoro am_michael x1.12 (woordtiming uit het model; exact 8, geschat 1)
-stijl: broadcast · muziek: synth 119 bpm · duur 22.3 s · shots 7
-preview: /home/runner/work/football-shorts/football-shorts/previews/2026-10-23-am_michael.mp4 13.5 MB
+slot 22:00 · wedstrijddag 2026-10-24 · online op 2026-10-24
+2026-10-24: 41 wedstrijden, 0 afgelopen, 0 nog niet gebruikt
+Geen nieuwe afgelopen wedstrijden -> klassement-verhaal BL1
+kleuren: Dortmund='Black / Yellow' Bayern='Red / White / Blue' -> stijl glow
+[0;93m2026-10-24 20:40:03.773526045 [W:onnxruntime:Default, device_discovery.cc:95 GetPciBusId] Skipping pci_bus_id for PCI path at "/sys/devices/LNXSYSTM:00/LNXSYBUS:00/ACPI0004:00/VMBUS:00/5620e0c7-8062-4dce-aeb7-520c7ef76171" because filename "5620e0c7-8062-4dce-aeb7-520c7ef76171" did not match expected pattern of [0-9a-f]+:[0-9a-f]+:[0-9a-f]+[.][0-9a-f]+[m
+stem: Kokoro am_michael x1.12 (woordtiming uit het model; exact 7, geschat 0)
+stijl: broadcast · muziek: synth 114 bpm · duur 18.7 s · shots 6
+preview: /home/runner/work/football-shorts/football-shorts/previews/2026-10-24-22u-am_michael.mp4 14.1 MB
