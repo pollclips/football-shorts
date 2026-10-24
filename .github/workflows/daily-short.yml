@@ -2,12 +2,21 @@ name: Daily football Short
 
 on:
   schedule:
-    - cron: "20 21 * * *"   # = 23:20 Brussel tijdens zomeruur
-    - cron: "20 22 * * *"   # = 23:20 Brussel tijdens winteruur
+    # twee video's per dag: run om 12:20 (online 13:00) en 21:20 (online 22:00) Brusselse tijd.
+    # GitHub rekent in UTC; per slot een start voor zomer- en winteruur, het script laat de verkeerde vallen.
+    - cron: "20 10 * * *"   # 12:20 Brussel zomeruur
+    - cron: "20 11 * * *"   # 12:20 Brussel winteruur
+    - cron: "20 19 * * *"   # 21:20 Brussel zomeruur
+    - cron: "20 20 * * *"   # 21:20 Brussel winteruur
   workflow_dispatch:
     inputs:
+      slot:
+        description: "auto = volgens het uur · 13 = video voor 13:00 (wedstrijden van gisteren) · 22 = video voor 22:00 (van vandaag)"
+        type: choice
+        options: [auto, "13", "22"]
+        default: auto
       mode:
-        description: "auto = video van vandaag · test = voorbeeldvideo naar Make · dry-run = enkel maken · preview = maken en in previews/ bewaren, niet posten"
+        description: "auto = nieuwe video · test = voorbeeldvideo naar Make · dry-run = enkel maken · preview = maken en in previews/ bewaren, niet posten"
         type: choice
         options: [auto, test, dry-run, preview]
         default: auto
@@ -48,6 +57,8 @@ jobs:
       MODE: ${{ inputs.mode || 'auto' }}
       FORCE: ${{ inputs.force && '1' || '' }}
       DAY: ${{ inputs.day || '' }}
+      SLOT: ${{ (inputs.slot && inputs.slot != 'auto') && inputs.slot || '' }}
+      MEDIA_BRANCH: media
       VOICE: ${{ inputs.voice || vars.VOICE || 'am_michael' }}
       STYLE: ${{ inputs.style || vars.STYLE || 'broadcast' }}
       SCHEDULED: ${{ github.event_name == 'schedule' && '1' || '' }}
@@ -115,20 +126,44 @@ jobs:
         continue-on-error: true
         run: python -m shorts.voice samples 2>&1 | tee -a out/run.log
 
-      - name: Video opslaan in de repository
-        if: env.MODE != 'preview'
+      # geschiedenis (welke wedstrijden al gebruikt zijn) op deze tak; de video's zelf niet (te groot)
+      - name: Geschiedenis opslaan
+        if: env.MODE != 'preview' && env.MODE != 'dry-run'
         run: |
           git config user.name "football-shorts-bot"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -A videos
+          git add -u videos
           [ -f history.json ] && git add history.json
           if git diff --cached --quiet; then
             echo "Niets nieuws om op te slaan."
           else
-            git commit -m "Short $(date -u +%F)"
+            git commit -m "Short $(date -u +%F' '%H:%M)"
             git pull --rebase -q origin "${{ github.ref_name }}" || true
             git push origin "HEAD:${{ github.ref_name }}"
           fi
+
+      # video op de tak 'media': die wordt telkens vervangen en houdt enkel de laatste dagen bij,
+      # zodat de repository niet blijft groeien. Make haalt de video daar op (raw-link).
+      - name: Video naar media-tak
+        if: env.MODE != 'preview' && env.MODE != 'dry-run'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          [ -f out/video_name ] || { echo "Geen nieuwe video."; exit 0; }
+          NAME=$(cat out/video_name)
+          M=$(mktemp -d); cd "$M"
+          git init -q -b media
+          git config user.name "football-shorts-bot"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          mkdir -p videos
+          if git fetch -q --depth=1 origin media 2>/dev/null; then git checkout -q FETCH_HEAD -- videos 2>/dev/null || true; fi
+          cp "$GITHUB_WORKSPACE/videos/$NAME" videos/
+          python3 -c "import datetime as d,pathlib as p;c=d.date.today()-d.timedelta(days=4);[f.unlink() for f in p.Path('videos').glob('*.mp4') if f.name[:4].isdigit() and d.date.fromisoformat(f.name[:10])<c]"
+          git add -A videos
+          git commit -q --allow-empty -m "media $NAME"
+          git push -q -f origin HEAD:media
+          ls -la videos
 
       # preview: video + logboek in previews/ op deze tak (ook als er iets misliep, om te kunnen nakijken)
       - name: Preview opslaan in de repository

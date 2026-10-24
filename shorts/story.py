@@ -402,10 +402,10 @@ def build_table_story(code, table, day, next_match, rng):
     return {"scenes": scenes}, meta
 
 
-def publish_time(now_utc):
-    """Volgende 00:00 in Brussel; te dichtbij of voorbij -> binnen 20 minuten."""
+def publish_time(now_utc, slot="22"):
+    """Vandaag om 13:00 of 22:00 Brussel (volgens het slot); te dichtbij of voorbij -> binnen 20 minuten."""
     local = now_utc.astimezone(TZ)
-    nxt = (local + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
-    if local.hour < 3 or nxt - local < timedelta(minutes=20):   # vertraagde run na middernacht: meteen
-        nxt = local + timedelta(minutes=20)
-    return nxt.astimezone(ZoneInfo("UTC")).strftime("%Y-%m-%dT%H:%M:%SZ")
+    target = local.replace(hour=int(slot), minute=0, second=0, microsecond=0)
+    if target - local < timedelta(minutes=20):
+        target = local + timedelta(minutes=20)
+    return target.astimezone(ZoneInfo("UTC")).strftime("%Y-%m-%dT%H:%M:%SZ")
