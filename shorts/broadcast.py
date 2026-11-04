@@ -529,6 +529,9 @@ class PreviewShot(VersusShot):
 
     def setup(self):
         super().setup()
+        a, b = self.d["a"].upper(), self.d["b"].upper()
+        self.a = txt(a, fit_size(a, 210, 900), WHITE)
+        self.b = txt(b, fit_size(b, 210, 900), WHITE)
         self.q = chip(self.d.get("chip", "WHO WINS?"), 92, self.p.ink, self.p.acc, padx=40, pady=18)
         self.impacts.append((self.t0 + 0.55, 0.8))
 
@@ -537,8 +540,8 @@ class PreviewShot(VersusShot):
         lt0 = t - self.t0
         put(img, self.tag, W / 2, 330, 1 + 0.4 * (1 - ease_out(lt0 / 0.18)))
         put(img, self.vs, W / 2, 810, 1 + 0.05 * math.sin(t * 3), 0, 0.9)
-        put(img, self.a, W / 2, 610, 1 + 0.18 * (1 - ease_out(lt0 / 0.16)))
-        put(img, self.b, W / 2, 1010, 1 + 0.18 * (1 - ease_out((lt0 - 0.12) / 0.16)))
+        put(img, self.a, W / 2, 610, 1 + 0.06 * (1 - ease_out(lt0 / 0.16)))
+        put(img, self.b, W / 2, 1010, 1 + 0.06 * (1 - ease_out((lt0 - 0.12) / 0.16)))
         lt = t - self.t0 - 0.55
         if lt >= 0:
             put(img, self.q, W / 2, 1270, 1 + 0.5 * (1 - ease_out(lt / 0.16)) + 0.02 * math.sin(t * 5), -3)

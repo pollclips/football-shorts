@@ -1,5 +1,6 @@
 """Kiest het sterkste verhaal van de dag en schrijft de Engelse teksten (beeld + voice-over)."""
 import random
+import unicodedata
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
@@ -179,7 +180,8 @@ def choose(rng, options, recent_tpls):
 
 
 def hashtag(name):
-    return "#" + "".join(ch for ch in name if ch.isalnum())
+    plain = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode()
+    return "#" + "".join(ch for ch in plain if ch.isalnum())
 
 
 # ------------------------------------------------------------------ teksten
@@ -474,8 +476,9 @@ def build_preview_story(m, table, form_h, form_a, rng, recent_tpls=()):
 
     scenes = [{"type": "preview", "tag": f"{when} · {comp.upper()}", "a": home, "b": away,
                "chip": "WHO WINS?", "min_dur": 2.6}]
-    if form_h and form_a:
-        scenes.append({"type": "form", "tag": "LAST 5 GAMES", "rows": [[home, form_h], [away, form_a]],
+    k = min(len(form_h), len(form_a), 5)
+    if k >= 4:      # gratis data kent enkel de grote competities: te weinig uitslagen = niet tonen
+        scenes.append({"type": "form", "tag": f"LAST {k} GAMES", "rows": [[home, form_h[-k:]], [away, form_a[-k:]]],
                        "min_dur": 3.4})
     if Hr and Ar:
         label = "LEAGUE PHASE" if code == "CL" else "THIS SEASON"
