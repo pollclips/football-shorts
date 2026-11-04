@@ -2,195 +2,94 @@
   "story": {
     "scenes": [
       {
-        "type": "quiz_q",
-        "q": "WHICH CLUB HAS CONCEDED THE FEWEST GOALS?",
-        "sub": "LEAGUE GAMES THIS SEASON",
-        "opts": [
-          "Aston Villa",
-          "Bayern",
-          "Milan",
-          "Man United"
-        ],
-        "min_dur": 7.2,
+        "type": "preview",
+        "tag": "TONIGHT · CHAMPIONS LEAGUE",
+        "a": "Fenerbahçe",
+        "b": "Liverpool",
+        "chip": "WHO WINS?",
+        "min_dur": 2.6,
         "lines": [],
-        "dur": 7.2
+        "dur": 2.6
       },
       {
-        "type": "quiz_reveal",
-        "q": "WHICH CLUB HAS CONCEDED THE FEWEST GOALS?",
-        "answer": 1,
-        "unit": "CONCEDED",
-        "opts": [
+        "type": "bars",
+        "tag": "LEAGUE PHASE",
+        "left": "Fenerbahçe",
+        "right": "Liverpool",
+        "rows": [
           [
-            "Aston Villa",
-            13,
-            9
+            "POSITION",
+            31,
+            4,
+            "pos"
           ],
           [
-            "Bayern",
-            8,
-            8
+            "POINTS",
+            2,
+            9,
+            ""
           ],
           [
-            "Milan",
+            "GOALS SCORED",
+            3,
             12,
-            10
-          ],
-          [
-            "Man United",
-            15,
-            9
+            ""
           ]
         ],
-        "min_dur": 4.4,
+        "min_dur": 3.6,
         "lines": [],
-        "dur": 4.4
+        "dur": 3.6
       },
       {
-        "type": "cta",
-        "q1": "How many",
-        "q2": "got it right?",
-        "q3": "",
-        "q4": "Comment below",
-        "follow": "Follow for daily football stats",
-        "captions": false,
-        "say": [
-          [
-            [
-              "Did",
-              "Did"
-            ],
-            [
-              "you",
-              "you"
-            ],
-            [
-              "get",
-              "get"
-            ],
-            [
-              "it",
-              "it"
-            ],
-            [
-              "right?",
-              "right?"
-            ]
-          ],
-          [
-            [
-              "Comment",
-              "Comment"
-            ],
-            [
-              "your",
-              "your"
-            ],
-            [
-              "answer!",
-              "answer!"
-            ]
-          ]
-        ],
-        "lines": [
-          {
-            "t0": 0.18,
-            "t1": 2.18,
-            "words": [
-              [
-                "Did",
-                0.23,
-                0.573
-              ],
-              [
-                "you",
-                0.573,
-                0.915
-              ],
-              [
-                "get",
-                0.915,
-                1.258
-              ],
-              [
-                "it",
-                1.258,
-                1.532
-              ],
-              [
-                "right?",
-                1.532,
-                2.08
-              ]
-            ]
-          },
-          {
-            "t0": 2.32,
-            "t1": 3.6,
-            "words": [
-              [
-                "Comment",
-                2.37,
-                2.794
-              ],
-              [
-                "your",
-                2.794,
-                3.076
-              ],
-              [
-                "answer!",
-                3.076,
-                3.5
-              ]
-            ]
-          }
-        ],
-        "dur": 4.0
+        "type": "poll",
+        "q": "WHO WINS?",
+        "home": "Fenerbahçe",
+        "away": "Liverpool",
+        "follow": "FOLLOW FOR A NEW STORY EVERY DAY",
+        "min_dur": 4.2,
+        "lines": [],
+        "dur": 4.2
       }
     ],
     "captions": []
   },
   "meta": {
-    "title": "Can you guess? Which club has conceded the fewest goals? #Shorts",
-    "description": "Which club has conceded the fewest goals? Aston Villa, Bayern, Milan, Man United — league games this season (Bundesliga, Premier League, Serie A). Comment your answer before the reveal!\n\n#Shorts #footballquiz #quiz #AstonVilla #Bayern #Milan #ManUnited #football #soccer",
-    "tpl": "fewest_conceded",
+    "title": "Who wins Fenerbahçe vs Liverpool? #Shorts",
+    "description": "Fenerbahçe vs Liverpool (Champions League), tonight. Who wins? Comment 1 for Fenerbahçe, X for a draw or 2 for Liverpool!\n\n#Shorts #Fenerbahce #Liverpool #ChampionsLeague #football #soccer",
+    "tpl": "pv3",
     "tags": [
       "football",
       "soccer",
-      "football quiz",
-      "quiz",
-      "Aston Villa",
-      "Bayern",
-      "Milan",
-      "Man United",
+      "Champions League",
+      "Fenerbahçe",
+      "Liverpool",
+      "Fenerbahçe vs Liverpool",
+      "prediction",
       "shorts"
     ],
-    "angle": "quiz",
+    "angle": "preview",
     "teams": [
-      58,
-      5,
-      98,
-      66
+      613,
+      64
     ],
-    "competition": "BL1",
-    "focus_team": 58,
-    "opp_team": 5,
-    "focus_name": "Aston Villa",
-    "opp_name": "Bayern",
-    "match": null,
-    "kind": "quiz"
+    "competition": "CL",
+    "focus_team": 613,
+    "opp_team": 64,
+    "focus_name": "Fenerbahçe",
+    "opp_name": "Liverpool",
+    "match": 575387,
+    "kind": "preview"
   },
   "theme": {
     "fprim": [
-      122,
-      38,
-      58
+      253,
+      208,
+      0
     ],
     "fsec": [
-      108,
-      171,
-      221
+      0,
+      87,
+      184
     ],
     "oprim": [
       214,
@@ -198,24 +97,24 @@
       39
     ],
     "bg": [
-      27,
-      16,
-      26
+      48,
+      43,
+      17
     ],
     "glow": [
-      71,
-      26,
-      41
+      143,
+      120,
+      9
     ],
     "acc": [
-      108,
-      171,
-      221
+      253,
+      208,
+      0
     ],
     "foc": [
-      108,
-      171,
-      221
+      253,
+      208,
+      0
     ],
     "opp": [
       222,
@@ -228,21 +127,21 @@
       22
     ],
     "stripe_a": [
-      122,
-      38,
-      58
+      253,
+      208,
+      0
     ],
     "stripe_b": [
-      108,
-      171,
-      221
+      0,
+      87,
+      184
     ],
     "opp_tint": [
       42,
       15,
       23
     ],
-    "style": "split",
+    "style": "diag",
     "hook_layout": "team_top"
   }
 }
