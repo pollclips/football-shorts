@@ -1,7 +1,23 @@
-slot 13:00 · dag 2026-11-04 · formaat quiz
-quiz: Can you guess? Which club has conceded the fewest goals? #Shorts
-kleuren: Aston Villa='Claret / Sky Blue' Bayern='Red / White / Blue' -> stijl split
+slot 13:00 · dag 2026-11-04 · formaat preview
+voorbeschouwing: Fenerbahçe SK - Liverpool FC CL 2026-11-04T17:45:00Z
+vorm: LD WWWWL
+kleuren: Fenerbahçe='Yellow / Blue' Liverpool='Red / White' -> stijl diag
 stem: geen stem (stem uitgeschakeld (enkel muziek))
-formaat: quiz · stijl: broadcast · muziek: synth 116 bpm · duur 15.6 s · shots 3
-opgeruimd: 2026-10-20.mp4
-preview: /home/runner/work/football-shorts/football-shorts/previews/2026-11-04-13u-quiz.mp4 11.8 MB
+formaat: preview · stijl: broadcast · muziek: synth 116 bpm · duur 10.4 s · shots 3
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/runner/work/football-shorts/football-shorts/shorts/main.py", line 328, in <module>
+    main()
+  File "/home/runner/work/football-shorts/football-shorts/shorts/main.py", line 307, in main
+    R.render(story, target, mix_wav, th)
+  File "/home/runner/work/football-shorts/football-shorts/shorts/broadcast.py", line 1010, in render
+    p.stdin.write(frame(i).tobytes())
+                  ^^^^^^^^
+  File "/home/runner/work/football-shorts/football-shorts/shorts/broadcast.py", line 979, in frame
+    s.draw(img, t)
+  File "/home/runner/work/football-shorts/football-shorts/shorts/broadcast.py", line 630, in draw
+    d.rectangle([split - (split - x0) * k, by, split - 4, by + 26], fill=p.acc + (int(255 * e),))
+  File "/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/PIL/ImageDraw.py", line 390, in rectangle
+    self.draw.draw_rectangle(xy, fill_ink, 1)
+ValueError: x1 must be greater than or equal to x0
