@@ -2,18 +2,26 @@ name: Daily football Short
 
 on:
   schedule:
-    # twee video's per dag: run om 12:20 (online 13:00) en 21:20 (online 22:00) Brusselse tijd.
-    # GitHub rekent in UTC; per slot een start voor zomer- en winteruur, het script laat de verkeerde vallen.
+    # twee video's per dag:
+    #  - 12:20 Brusselse tijd -> online 13:00 (voorbeschouwing + poll, maandag quiz)
+    #  - 23:15 Brusselse tijd -> online meteen (verslag, ook van de avondmatchen / Champions League)
+    # GitHub rekent in UTC en start vaak 30-60 min later; per slot een start voor zomer- en winteruur,
+    # het script laat de start buiten het venster vallen.
     - cron: "20 10 * * *"   # 12:20 Brussel zomeruur
     - cron: "20 11 * * *"   # 12:20 Brussel winteruur
-    - cron: "20 19 * * *"   # 21:20 Brussel zomeruur
-    - cron: "20 20 * * *"   # 21:20 Brussel winteruur
+    - cron: "15 21 * * *"   # 23:15 Brussel zomeruur
+    - cron: "15 22 * * *"   # 23:15 Brussel winteruur
   workflow_dispatch:
     inputs:
       slot:
-        description: "auto = volgens het uur · 13 = video voor 13:00 (wedstrijden van gisteren) · 22 = video voor 22:00 (van vandaag)"
+        description: "auto = volgens het uur · 13 = video voor 13:00 · 23 = avondvideo (verslag van vandaag)"
         type: choice
-        options: [auto, "13", "22"]
+        options: [auto, "13", "23"]
+        default: auto
+      format:
+        description: "auto = volgens het slot · recap = verslag · preview = voorbeschouwing + poll · quiz"
+        type: choice
+        options: [auto, recap, preview, quiz]
         default: auto
       mode:
         description: "auto = nieuwe video · test = voorbeeldvideo naar Make · dry-run = enkel maken · preview = maken en in previews/ bewaren, niet posten"
@@ -29,7 +37,7 @@ on:
         type: string
         default: ""
       voice:
-        description: "(optioneel) andere stem, bv. am_michael, bm_george, af_heart"
+        description: "(optioneel) stem, bv. am_michael; standaard geen stem (enkel muziek)"
         type: string
         default: ""
       samples:
@@ -59,7 +67,8 @@ jobs:
       DAY: ${{ inputs.day || '' }}
       SLOT: ${{ (inputs.slot && inputs.slot != 'auto') && inputs.slot || '' }}
       MEDIA_BRANCH: media
-      VOICE: ${{ inputs.voice || vars.VOICE || 'am_michael' }}
+      VOICE: ${{ inputs.voice || 'none' }}
+      FORMAT: ${{ inputs.format || 'auto' }}
       STYLE: ${{ inputs.style || vars.STYLE || 'broadcast' }}
       SCHEDULED: ${{ github.event_name == 'schedule' && '1' || '' }}
       PYTHONUNBUFFERED: "1"
@@ -96,12 +105,14 @@ jobs:
 
       # stem: mag mislukken, dan komt er een video zonder stem (met ondertitels)
       - name: Stemmodel uit cache
+        if: env.VOICE != 'none'
         uses: actions/cache@v4
         with:
           path: models
           key: kokoro-v1.0-timed-1
 
       - name: Stem installeren
+        if: env.VOICE != 'none'
         continue-on-error: true
         timeout-minutes: 6
         run: |

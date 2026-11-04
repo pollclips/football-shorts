@@ -27,6 +27,35 @@ COMPETITIONS = {
     "BSA": ("Brasileirão", "#Brasileirao", 0.40),
 }
 
+# Champions League krijgt extra voorrang: daar kijkt de hele wereld naar
+CL_BOOST = 1.35
+
+# Clubs waar een internationaal publiek op zoekt en voor blijft kijken (naam zoals team_name() hem geeft).
+# 1.0 = wereldwijde topclub, 0.75 = grote club, 0.5 = bekende club. Andere clubs: enkel als tegenstander.
+CLUB_TIER = {
+    **{n: 1.0 for n in ("Real Madrid", "Barcelona", "Man City", "Man United", "Liverpool", "Arsenal",
+                        "Chelsea", "PSG", "Bayern")},
+    **{n: 0.75 for n in ("Juventus", "Inter", "Milan", "Tottenham", "Atlético", "Dortmund", "Newcastle",
+                         "Napoli", "Aston Villa")},
+    **{n: 0.5 for n in ("Leverkusen", "Roma", "Benfica", "Porto", "Sporting CP", "Ajax", "Galatasaray",
+                        "Marseille", "PSV", "Celtic", "Fenerbahçe")},
+}
+# reserve op id (football-data.org), voor het geval de korte naam ooit anders is
+CLUB_TIER_ID = {86: "Real Madrid", 81: "Barcelona", 65: "Man City", 66: "Man United", 64: "Liverpool",
+                57: "Arsenal", 61: "Chelsea", 524: "PSG", 5: "Bayern", 109: "Juventus", 108: "Inter", 98: "Milan",
+                73: "Tottenham", 78: "Atlético", 4: "Dortmund", 67: "Newcastle", 113: "Napoli", 58: "Aston Villa",
+                3: "Leverkusen", 100: "Roma", 1903: "Benfica", 503: "Porto", 498: "Sporting CP", 678: "Ajax",
+                610: "Galatasaray", 516: "Marseille", 674: "PSV"}
+
+
+def tier(team):
+    """Populariteit van een club (0 = onbekend voor een internationaal publiek)."""
+    t = CLUB_TIER.get(team_name(team))
+    if t is None and team.get("id") in CLUB_TIER_ID:
+        t = CLUB_TIER[CLUB_TIER_ID[team["id"]]]
+    return t or 0.0
+
+
 # nettere namen dan de standaard shortName van de API
 NAME_FIX = {
     "Brighton Hove": "Brighton",
@@ -84,6 +113,23 @@ class Api:
         except requests.RequestException:
             return ""
         return (js or {}).get("clubColors") or ""
+
+    def form(self, team_id, date_from, date_to, n=5):
+        """Laatste n uitslagen van een club (alle competities), oudste eerst: lijst 'W'/'D'/'L'."""
+        try:
+            js = self.get(f"/teams/{team_id}/matches", {"dateFrom": date_from, "dateTo": date_to},
+                          f"form_{team_id}.json")
+        except requests.RequestException:
+            return []
+        ms = [m for m in (js or {}).get("matches", []) if m.get("status") == "FINISHED"
+              and m["score"]["fullTime"].get("home") is not None]
+        ms.sort(key=lambda m: m["utcDate"])
+        out = []
+        for m in ms[-n:]:
+            h, a = m["score"]["fullTime"]["home"], m["score"]["fullTime"]["away"]
+            mine, theirs = (h, a) if m["homeTeam"]["id"] == team_id else (a, h)
+            out.append("W" if mine > theirs else "L" if mine < theirs else "D")
+        return out
 
     def next_match(self, team_id, date_from, date_to):
         try:

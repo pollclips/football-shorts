@@ -508,6 +508,283 @@ class VersusShot(Shot):
             put(img, self.b, W / 2 + 500 * (1 - ease_out(lb / 0.22)), 1010)
 
 
+GREEN, GREY, RED = (46, 204, 113), (140, 146, 158), (235, 77, 61)
+
+
+def _ord(n):
+    return f"{n}{'TH' if 10 <= n % 100 <= 20 else {1: 'ST', 2: 'ND', 3: 'RD'}.get(n % 10, 'TH')}"
+
+
+@lru_cache(maxsize=64)
+def slab(w, h, color, alpha=235):
+    """Schuine balk (parallellogram) als beeld."""
+    sk = int(h * SLANT)
+    im = Image.new("RGBA", (w + sk, h), (0, 0, 0, 0))
+    ImageDraw.Draw(im).polygon([(sk, 0), (w + sk, 0), (w, h), (0, h)], fill=color + (alpha,))
+    return im
+
+
+class PreviewShot(VersusShot):
+    """Voorbeschouwing: beide clubs meteen in beeld + 'WHO WINS?'."""
+
+    def setup(self):
+        super().setup()
+        self.q = chip(self.d.get("chip", "WHO WINS?"), 92, self.p.ink, self.p.acc, padx=40, pady=18)
+        self.impacts.append((self.t0 + 0.55, 0.8))
+
+    def draw(self, img, t):
+        # alles meteen leesbaar (ook beeld 1): enkel een korte 'punch', niet van buiten beeld inschuiven
+        lt0 = t - self.t0
+        put(img, self.tag, W / 2, 330, 1 + 0.4 * (1 - ease_out(lt0 / 0.18)))
+        put(img, self.vs, W / 2, 810, 1 + 0.05 * math.sin(t * 3), 0, 0.9)
+        put(img, self.a, W / 2, 610, 1 + 0.18 * (1 - ease_out(lt0 / 0.16)))
+        put(img, self.b, W / 2, 1010, 1 + 0.18 * (1 - ease_out((lt0 - 0.12) / 0.16)))
+        lt = t - self.t0 - 0.55
+        if lt >= 0:
+            put(img, self.q, W / 2, 1270, 1 + 0.5 * (1 - ease_out(lt / 0.16)) + 0.02 * math.sin(t * 5), -3)
+
+
+class FormShot(Shot):
+    """Vorm van beide clubs: laatste 5 uitslagen als gekleurde W/D/L-blokjes."""
+    variant = 2
+
+    def setup(self):
+        self.head = chip(self.d.get("tag", "LAST 5 GAMES"), 58, self.p.ink, self.p.acc, padx=30, pady=12)
+        self.rows = self.d["rows"][:2]
+        self.impacts = [(self.t0 + 0.02, 0.3)] + [(self.t0 + 0.35 + k * 0.55, 0.5) for k in range(len(self.rows))]
+
+    def draw(self, img, t):
+        lt = t - self.t0
+        put(img, self.head, 70 - 300 * (1 - ease_out(lt / 0.25)), 285, anchor="l")
+        for k, (name, form) in enumerate(self.rows):
+            base = 0.15 + k * 0.55
+            y = 500 + k * 470
+            e = ease_out((lt - base) / 0.25)
+            if e <= 0:
+                continue
+            nm = name.upper()
+            put(img, txt(nm, fit_size(nm, 130, 940), self.p.acc if k == 0 else WHITE), 70 - 400 * (1 - e), y, anchor="l")
+            for i, r in enumerate(form[-5:]):
+                st = base + 0.2 + i * 0.07
+                ee = ease_out((lt - st) / 0.18)
+                if ee <= 0:
+                    continue
+                col = GREEN if r == "W" else RED if r == "L" else GREY
+                blk = slab(150, 150, col, 255)
+                letter = txt(r, 110, WHITE, shadow=False)
+                cx = 140 + i * 190
+                sc = 1 + 0.6 * (1 - ee)
+                put(img, blk, cx, y + 190, sc)
+                put(img, letter, cx, y + 190, sc)
+            w_, d_, l_ = form.count("W"), form.count("D"), form.count("L")
+            summ = f"{w_}W  {d_}D  {l_}L"
+            if lt > base + 0.6:
+                put(img, txt(summ, 54, WHITE, INTER, False), 75, y + 325, 1, 0, ease_out((lt - base - 0.6) / 0.2),
+                    anchor="l")
+
+
+class BarsShot(Shot):
+    """Twee clubs naast elkaar: per rij twee cijfers en een verdeelde balk (tellen op)."""
+    variant = 1
+
+    def setup(self):
+        d = self.d
+        self.head = chip(d.get("tag", "THIS SEASON"), 58, self.p.ink, self.p.acc, padx=30, pady=12)
+        l, r = d["left"].upper(), d["right"].upper()
+        self.l = txt(l, fit_size(l, 96, 470), self.p.acc)
+        self.r = txt(r, fit_size(r, 96, 470), WHITE)
+        self.rows = d["rows"][:3]
+        self.impacts = [(self.t0 + 0.02, 0.3)] + [(self.t0 + 0.3 + i * 0.35, 0.45) for i in range(len(self.rows))]
+
+    def draw(self, img, t):
+        lt = t - self.t0
+        p = self.p
+        put(img, self.head, 70 - 300 * (1 - ease_out(lt / 0.25)), 285, anchor="l")
+        e0 = ease_out(lt / 0.25)
+        put(img, self.l, 70 - 300 * (1 - e0), 440, anchor="l")
+        put(img, self.r, W - 70 + 300 * (1 - e0), 440, anchor="r")
+        d = ImageDraw.Draw(img)
+        for i, (lab, lv, rv, unit) in enumerate(self.rows):
+            st = 0.25 + i * 0.35
+            e = ease_out((lt - st) / 0.3)
+            if e <= 0:
+                continue
+            y = 610 + i * 270
+            put(img, txt(lab, 44, (200, 205, 215), INTER, False), W / 2, y, 1, 0, e)
+            k = ease_out((lt - st) / 0.6)
+            if unit == "pos":
+                ls, rs = _ord(lv), _ord(rv)
+                lw, rw = 1 / max(lv, 1), 1 / max(rv, 1)
+            else:
+                ls, rs = str(int(round(lv * k))), str(int(round(rv * k)))
+                lw, rw = max(lv, 0), max(rv, 0)
+            put(img, txt(ls, 130, WHITE), 70, y + 95, 1, 0, e, anchor="l")
+            put(img, txt(rs, 130, WHITE), W - 70, y + 95, 1, 0, e, anchor="r")
+            share = lw / (lw + rw) if (lw + rw) else 0.5
+            x0, x1, by = 90, W - 90, y + 180
+            split = x0 + (x1 - x0) * share
+            d.rectangle([x0, by, x1, by + 26], fill=(255, 255, 255, int(40 * e)))
+            d.rectangle([split - (split - x0) * k, by, split - 4, by + 26], fill=p.acc + (int(255 * e),))
+            d.rectangle([split + 4, by, split + (x1 - split) * k, by + 26], fill=(225, 228, 235, int(255 * e)))
+
+
+class PollShot(Shot):
+    """Afsluiter van de voorbeschouwing: 1 / X / 2 kiezen in de comments (het einde loopt terug naar het begin)."""
+    variant = 0
+
+    def setup(self):
+        d, p = self.d, self.p
+        self.q = txt(d.get("q", "WHO WINS?"), 210, WHITE)
+        self.opts = [("1", d["home"].upper()), ("X", "DRAW"), ("2", d["away"].upper())]
+        self.cmt = chip("COMMENT 1, X OR 2", 74, p.ink, p.acc, padx=36, pady=16)
+        self.fol = chip(d.get("follow", "FOLLOW FOR DAILY FOOTBALL"), 46, WHITE, INK, padx=28, pady=12)
+        self.impacts = [(self.t0 + 0.02, 0.7)] + [(self.t0 + 0.35 + i * 0.22, 0.4) for i in range(3)] + \
+                       [(self.t0 + 1.2, 0.8)]
+
+    def draw(self, img, t):
+        lt = t - self.t0
+        p = self.p
+        put(img, self.q, W / 2, 470, 1 + 0.5 * (1 - ease_out(lt / 0.15)), -2)
+        for i, (key, name) in enumerate(self.opts):
+            st = 0.3 + i * 0.22
+            e = ease_out((lt - st) / 0.25)
+            if e <= 0:
+                continue
+            y = 760 + i * 180
+            dirn = -1 if i % 2 == 0 else 1
+            row = Image.new("RGBA", (980, 150), (0, 0, 0, 0))
+            row.alpha_composite(slab(900, 140, (18, 20, 26), 240), (0, 5))
+            row.alpha_composite(slab(150, 140, p.acc, 255), (0, 5))
+            kt = txt(key, 110, p.ink, shadow=False)
+            row.alpha_composite(kt, (int(75 + 140 * SLANT / 2 - kt.width / 2), int(75 - kt.height / 2)))
+            nt = txt(name, fit_size(name, 96, 660), WHITE, shadow=False)
+            row.alpha_composite(nt, (200, int(75 - nt.height / 2)))
+            put(img, row, W / 2 + dirn * 700 * (1 - e), y)
+        lc = lt - 1.2
+        if lc >= 0:
+            put(img, self.cmt, W / 2, 1360, 1 + 0.4 * (1 - ease_out(lc / 0.15)) + 0.03 * math.sin(t * 6))
+            put(img, self.fol, W / 2, 1500, 1, 0, ease_out((lc - 0.3) / 0.2))
+
+
+def _wrap(text, size, maxw, name=ANTON):
+    words, lines, cur = text.split(), [], ""
+    for w in words:
+        tryl = (cur + " " + w).strip()
+        if font(size, name).getlength(tryl) <= maxw:
+            cur = tryl
+        else:
+            lines.append(cur)
+            cur = w
+    if cur:
+        lines.append(cur)
+    return lines
+
+
+class _QuizBase(Shot):
+    def _layout_q(self, maxlines=3):
+        size = 112
+        while True:
+            lines = _wrap(self.d["q"], size, 900)
+            if len(lines) <= maxlines or size <= 70:
+                break
+            size -= 8
+        self.q_lines = [txt(ln, size, WHITE) for ln in lines]
+        self.q_h = size * 1.12
+
+    def _draw_q(self, img, lt, top=390, sc0=0.25):
+        for k, im in enumerate(self.q_lines):
+            put(img, im, W / 2, top + k * self.q_h, 1 + sc0 * (1 - ease_out(lt / 0.15)))
+
+    def _row(self, letter, name, value=None, hl=False, dim=False):
+        p = self.p
+        row = Image.new("RGBA", (1000, 150), (0, 0, 0, 0))
+        row.alpha_composite(slab(910, 140, p.acc if hl else (18, 20, 26), 245), (0, 5))
+        row.alpha_composite(slab(140, 140, INK if hl else p.prim, 255), (0, 5))
+        lt_ = txt(letter, 100, p.acc if hl else WHITE, shadow=False)
+        row.alpha_composite(lt_, (int(70 + 140 * SLANT / 2 - lt_.width / 2), int(75 - lt_.height / 2)))
+        col = p.ink if hl else WHITE
+        nt = txt(name.upper(), fit_size(name.upper(), 88, 520 if value else 660), col, shadow=False)
+        row.alpha_composite(nt, (190, int(75 - nt.height / 2)))
+        if value:
+            vt = txt(value, 96, col, shadow=False)
+            row.alpha_composite(vt, (int(880 - vt.width), int(75 - vt.height / 2)))
+        if dim:
+            row.putalpha(row.getchannel("A").point(lambda v: int(v * 0.42)))
+        return row
+
+
+class QuizShot(_QuizBase):
+    """Vraag + 4 antwoorden meteen in beeld, daarna 3-2-1 aftellen."""
+    variant = 2
+
+    def setup(self):
+        self._layout_q()
+        self.tag = chip("QUIZ", 64, self.p.ink, self.p.acc, padx=30, pady=12)
+        self.sub = chip(self.d.get("sub", ""), 40, WHITE, INK, padx=24, pady=10) if self.d.get("sub") else None
+        self.opts = self.d["opts"][:4]
+        self.cd0 = self.t1 - 3.2
+        self.lock = chip("LOCK IN YOUR ANSWER", 56, WHITE, INK, padx=30, pady=12)
+        self.impacts = [(self.t0 + 0.02, 0.6)] + [(self.t0 + 0.25 + i * 0.12, 0.3) for i in range(4)] + \
+                       [(self.cd0 + k, 0.9) for k in range(3)]
+
+    def draw(self, img, t):
+        lt = t - self.t0
+        put(img, self.tag, 70, 215, 1 + 0.4 * (1 - ease_out(lt / 0.15)), anchor="l")
+        if self.sub:
+            put(img, self.sub, 70 + self.tag.width + 6, 215, anchor="l")
+        top = 420 if len(self.q_lines) <= 2 else 390
+        self._draw_q(img, lt, top, sc0=0.07)
+        y0 = top + len(self.q_lines) * self.q_h + 110
+        for i, name in enumerate(self.opts):
+            e = ease_out((lt - 0.25 - i * 0.12) / 0.22)
+            if e <= 0:
+                continue
+            put(img, self._row("ABCD"[i], name), W / 2 + 800 * (1 - e) * (1 if i % 2 else -1), y0 + i * 165)
+        c = t - self.cd0
+        if c >= 0:
+            k = min(2, int(c))
+            n = 3 - k
+            f = c - k
+            cy = y0 + 4 * 165 + 150
+            d = ImageDraw.Draw(img)
+            r = 105
+            d.ellipse([W / 2 - r, cy - r, W / 2 + r, cy + r], fill=INK + (235,))
+            d.arc([W / 2 - r, cy - r, W / 2 + r, cy + r], -90, -90 + 360 * (1 - f), fill=self.p.acc + (255,), width=16)
+            put(img, txt(str(n), 150, WHITE, shadow=False), W / 2, cy, 1 + 0.6 * (1 - ease_out(f / 0.15)))
+            put(img, self.lock, W / 2, cy - 175, 1, 0, ease_out(c / 0.2))
+
+
+class RevealShot(_QuizBase):
+    """Het antwoord: waarden tellen op, juiste club licht op."""
+    variant = 0
+
+    def setup(self):
+        self._layout_q(maxlines=2)
+        self.tag = chip("ANSWER", 64, self.p.ink, self.p.acc, padx=30, pady=12)
+        self.ans = self.d["answer"]
+        self.unit = self.d.get("unit", "")
+        self.opts = self.d["opts"][:4]
+        self.impacts = [(self.t0 + 0.02, 0.4), (self.t0 + 0.75, 1.0)]
+
+    def draw(self, img, t):
+        lt = t - self.t0
+        put(img, self.tag, 70, 215, 1 + 0.4 * (1 - ease_out(lt / 0.15)), anchor="l")
+        for k, im in enumerate(self.q_lines):
+            put(img, im, W / 2, 360 + k * self.q_h, 0.62)
+        y0 = 360 + len(self.q_lines) * self.q_h * 0.62 + 170
+        k = ease_out((lt - 0.1) / 0.55)
+        show = lt >= 0.75
+        for i, (name, val, played) in enumerate(self.opts):
+            hl = show and i == self.ans
+            dim = show and i != self.ans
+            row = self._row("ABCD"[i], name, str(int(round(val * k))), hl, dim)
+            sc = 1 + (0.12 * (1 - ease_out((lt - 0.75) / 0.2)) + 0.02 * math.sin(t * 6) if hl else 0)
+            put(img, row, W / 2, y0 + i * 165, sc)
+            if hl:
+                note = txt(f"{val} {self.unit} IN {played} GAMES", 50, WHITE, INTER, False)
+                put(img, note, W / 2, y0 + 4 * 165 + 60, 1, 0, ease_out((lt - 0.85) / 0.2))
+
+
 # ------------------------------------------------------------------ regie: van verhaal naar shots
 class _Seg:
     def __init__(self, start, dur):
@@ -558,6 +835,18 @@ def direct(story, pal):
                 shots.append(KineticShot(cut, seg.end, {"words": lines[1], "accent": acc}, pal))
         elif ty == "next":
             shots.append(VersusShot(seg.start, seg.end, sc, pal))
+        elif ty == "preview":
+            shots.append(PreviewShot(seg.start, seg.end, sc, pal))
+        elif ty == "form":
+            shots.append(FormShot(seg.start, seg.end, sc, pal))
+        elif ty == "bars":
+            shots.append(BarsShot(seg.start, seg.end, sc, pal))
+        elif ty == "poll":
+            shots.append(PollShot(seg.start, seg.end, sc, pal))
+        elif ty == "quiz_q":
+            shots.append(QuizShot(seg.start, seg.end, sc, pal))
+        elif ty == "quiz_reveal":
+            shots.append(RevealShot(seg.start, seg.end, sc, pal))
         elif ty == "cta":
             words = lines[0] if lines else [(sc.get("q1", "") + " " + sc.get("q2", ""), seg.start, seg.end)]
             chip_at = lines[1][0][1] if len(lines) > 1 else seg.start + 1.2

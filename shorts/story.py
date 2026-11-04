@@ -3,7 +3,7 @@ import random
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
-from .data import COMPETITIONS, team_name
+from .data import CL_BOOST, COMPETITIONS, team_name, tier
 
 TZ = ZoneInfo("Europe/Brussels")
 FOLLOW = ["Follow for daily football news", "Follow for a new story every day", "Follow for daily football stats"]
@@ -99,7 +99,12 @@ def comp_token(comp):
 
 
 # ------------------------------------------------------------------ kandidaten
+NEUTRAL = ("goal_fest", "top_clash", "big_game", "result")
+
+
 def candidates(matches, tables, recent_team_ids):
+    """Alle mogelijke verhalen, sterkste eerst. Enkel wedstrijden met minstens één bekende club:
+    een internationaal publiek swipet weg bij clubs die het niet kent."""
     out = []
     for m in matches:
         if m.get("status") != "FINISHED":
@@ -109,6 +114,9 @@ def candidates(matches, tables, recent_team_ids):
             continue
         ft = m["score"]["fullTime"]
         if ft.get("home") is None:
+            continue
+        th, ta = tier(m["homeTeam"]), tier(m["awayTeam"])
+        if max(th, ta) == 0:
             continue
         ht = m["score"].get("halfTime") or {}
         hs, as_ = ft["home"], ft["away"]
@@ -120,6 +128,10 @@ def candidates(matches, tables, recent_team_ids):
         total, margin = hs + as_, abs(hs - as_)
         ang = []
         if side:
+            loser = "away" if side == "home" else "home"
+            w_t, l_t = (th, ta) if side == "home" else (ta, th)
+            if l_t >= 0.75 and l_t > w_t:                       # grote club verliest van een kleinere
+                ang.append(("big_loss", 5.5 + 2 * l_t, loser))
             if Wr and Wr["played"] >= 4 and Wr["won"] == Wr["played"]:
                 ang.append(("perfect_run", 6 + 0.3 * Wr["played"], side))
             if Wr and Wr["won"] == 1 and Wr["played"] >= 5:
@@ -135,22 +147,39 @@ def candidates(matches, tables, recent_team_ids):
             if Wr and Wr["pos"] == 1:
                 ang.append(("leader", 2.6, side))
             if Lr and Lr["won"] == 0 and Lr["played"] >= 5:
-                ang.append(("winless", 2.6, "away" if side == "home" else "home"))
+                ang.append(("winless", 2.6, loser))
         if H and A and H["pos"] <= 4 and A["pos"] <= 4:
             ang.append(("top_clash", 3.6, side or "home"))
+        if th and ta:                                           # twee bekende clubs: altijd interessant
+            ang.append(("big_game", 3.2 + 0.6 * min(th, ta), side or "home"))
         if total >= 6:
             ang.append(("goal_fest", 3 + 0.3 * (total - 6), side or "home"))
         if not ang:
             ang.append(("result", 1 + 0.2 * total, side or "home"))
-        weight = COMPETITIONS[code][2]
+        weight = COMPETITIONS[code][2] * (CL_BOOST if code == "CL" else 1.0)
         for name, score, focus in ang:
-            s = score * weight
+            f_t, o_t = (th, ta) if focus == "home" else (ta, th)
+            if name in NEUTRAL:
+                f_t, o_t = max(th, ta), min(th, ta)
+            elif f_t == 0:
+                continue        # verhaal over een onbekende club (bv. die een grote club klopt): dan big_loss
+            s = score * weight * (0.35 + f_t + 0.4 * o_t)
             if hid in recent_team_ids or aid in recent_team_ids:
                 s *= 0.4
             out.append({"score": s, "angle": name, "focus": focus, "match": m, "code": code,
                         "H": H, "A": A, "table": tables.get(code, {}).get(hid, [])})
     out.sort(key=lambda c: c["score"], reverse=True)
     return out
+
+
+def choose(rng, options, recent_tpls):
+    """Kiest een titelvariant die de laatste tijd niet gebruikt is. options: [(sleutel, titel)]."""
+    fresh = [o for o in options if o[0] not in recent_tpls] or options
+    return fresh[rng.randrange(len(fresh))]
+
+
+def hashtag(name):
+    return "#" + "".join(ch for ch in name if ch.isalnum())
 
 
 # ------------------------------------------------------------------ teksten
@@ -181,7 +210,7 @@ def _table_lines(F, Fr, table, comp):
     return [first, L(N(gap), "point" if gap == 1 else "points", "behind", P(T(lead["name"]), "."))]
 
 
-def build_story(c, day, next_match, all_matches, rng):
+def build_story(c, day, next_match, all_matches, rng, recent_tpls=()):
     m, code, angle, focus = c["match"], c["code"], c["angle"], c["focus"]
     comp, comp_tag, _ = COMPETITIONS[code]
     home, away = team_name(m["homeTeam"]), team_name(m["awayTeam"])
@@ -195,29 +224,39 @@ def build_story(c, day, next_match, all_matches, rng):
     n = Fr["played"] if Fr else None
     scoreline = f"{home.upper()} {hs}–{as_} {away.upper()}"
     team_big = F.upper()
+    res = f"{home} {hs}–{as_} {away}"
 
-    # --- haak + titel per invalshoek
-    if angle == "perfect_run":
+    # --- haak + titel per invalshoek (titels: clubnaam vooraan, telkens een andere variant)
+    if angle == "big_loss":
+        big = pick(rng, ["BEATEN", "STUNNED", "UPSET"])
+        sub = f"lost {os_}–{fs} to {O}"
+        say = [L(T(F), "lose!"), L(T(O), "beat them", P(SC(os_, fs), "."))]
+        q, q_say = ("Crisis", "or blip?"), L("Crisis or just a blip?")
+        note = pick(rng, ["Nobody saw that coming.", "A night to forget.", "Big points dropped."])
+        titles = [("bl1", f"{F} lose to {O} 😳"), ("bl2", f"{O} stun {F} {os_}–{fs}"),
+                  ("bl3", f"Nobody saw this coming: {F} beaten by {O}"), ("bl4", f"What happened to {F}? {res}")]
+    elif angle == "perfect_run":
         big = f"{n} FROM {n}"
         sub = f"{n} games. {n} wins."
         say = [L(T(F), "make it", N(n), "from", P(N(n), "!"))]
         q, q_say = ("Can anyone", "stop them?"), L("Can anyone stop them?")
         note = pick(rng, ["Another three points.", "Still perfect.", "Nobody has stopped them yet."])
-        title = f"{F}: {n} from {n} 🔥 Can anyone stop them? #Shorts"
+        titles = [("pr1", f"{F} make it {n} from {n} 🔥"), ("pr2", f"{n} games, {n} wins: can anyone stop {F}?"),
+                  ("pr3", f"{F} are still perfect ({n}/{n})")]
     elif angle == "first_win":
         big = "FINALLY"
-        sub = f"First win of the season"
+        sub = "First win of the season"
         say = [L(T(F), "finally win!"), L("It took them", N(n), "games.")]
         q, q_say = ("Is this", "the turnaround?"), L("Is this the turnaround?")
         note = pick(rng, ["The wait is over.", "First three points of the season."])
-        title = f"{F} finally win! First victory after {n} games #Shorts"
+        titles = [("fw1", f"{F} finally win after {n} games"), ("fw2", f"The wait is over for {F}")]
     elif angle == "upset":
-        big = pick(rng, ["UPSET", "SHOCK"])
+        big = pick(rng, ["UPSET", "GIANT KILLING"])
         sub = f"{ordinal(Fr['pos'])} beat {ordinal(Or['pos'])}"
-        say = [L("Shock result!"), L(T(F), "just beat", P(T(O), "!"))]
+        say = [L("Upset!"), L(T(F), "just beat", P(T(O), "!"))]
         q, q_say = ("Biggest upset", "of the season?"), L("Biggest upset of the season?")
         note = f"{ordinal(Fr['pos'])} beats {ordinal(Or['pos'])}"
-        title = f"SHOCK: {F} beat {O} {fs}–{os_} 😳 #Shorts"
+        titles = [("up1", f"{F} beat {O} {fs}–{os_} 😳"), ("up2", f"Did you see {F} vs {O}?")]
     elif angle == "comeback":
         fh, oh = (ht_pair if focus == "home" else ht_pair[::-1])
         big = "COMEBACK"
@@ -225,14 +264,17 @@ def build_story(c, day, next_match, all_matches, rng):
         say = [L(T(F), "were losing at the break."), L("Then this happened.")]
         q, q_say = ("Comeback of", "the week?"), L("Comeback of the week?")
         note = pick(rng, ["What a second half.", "Never give up.", "A different team after the break."])
-        title = f"{F} come from behind to beat {O} {fs}–{os_} 🔥 #Shorts"
+        titles = [("cb1", f"{F} were losing at half-time… then this happened"),
+                  ("cb2", f"From {fh}–{oh} down to a {fs}–{os_} win: {F} 🔥"),
+                  ("cb3", f"{F} turn it around against {O}")]
     elif angle == "thrashing":
         big = f"{fs}–{os_}"
         sub = f"{F} vs {O}"
         say = [L(T(F), "just destroyed", P(T(O), "!")), L(P(SC(fs, os_), "."))]
         q, q_say = ("Statement", "of the season?"), L("Statement win of the season?")
         note = pick(rng, ["One-way traffic.", "No mercy."])
-        title = f"{F} {fs}–{os_} {O}: what a statement 💥 #Shorts"
+        titles = [("th1", f"{F} {fs}–{os_} {O} 💥"), ("th2", f"{F} put {fs} past {O}"),
+                  ("th3", f"{O} had no answer: {F} win {fs}–{os_}")]
     elif angle == "goal_fest":
         tot = hs + as_
         big = f"{tot} GOALS"
@@ -241,29 +283,30 @@ def build_story(c, day, next_match, all_matches, rng):
         say = [L(N(tot), "goals in one game!"), _result_line(home, away, hs, as_)]
         q, q_say = ("Game of", "the weekend?"), L("Game of the weekend?")
         note = f"{tot} goals in one game"
-        title = f"{home} {hs}–{as_} {away}: {tot} goals of chaos 🤯 #Shorts"
-    elif angle == "top_clash":
-        big = "TOP CLASH"
-        sub = "Top four. Big points."
+        titles = [("gf1", f"{res}: {tot} goals 🤯"), ("gf2", f"{tot} goals between {home} and {away}")]
+    elif angle in ("top_clash", "big_game"):
+        big = "TOP CLASH" if angle == "top_clash" else pick(rng, ["BIG GAME", "FULL-TIME"])
+        sub = "Top four. Big points." if angle == "top_clash" else comp
         team_big = None
-        say = [L("Top of the table clash in the", P(comp_token(comp), "!")), _result_line(home, away, hs, as_)]
-        q, q_say = ("Who wins", "the league?"), L("Who wins the league?")
-        note = "A direct duel at the top"
-        title = f"{home} {hs}–{as_} {away}: big result at the top #Shorts"
+        say = [L("Big game in the", P(comp_token(comp), "!")), _result_line(home, away, hs, as_)]
+        q, q_say = ("Who was", "the best player?"), L("Who was the best player?")
+        note = comp
+        titles = [("bg1", f"{res} | {comp}"), ("bg2", f"Full-time: {res}"),
+                  ("bg3", f"{home} vs {away}: who won the big one?")]
     elif angle == "leader":
         big = "STILL TOP"
         sub = f"{Fr['pts']} points from {n} games"
         say = [L(T(F), "win again and stay top!")]
         q, q_say = ("Who wins", "the title?"), L("Can anyone catch them?")
         note = pick(rng, ["The leaders keep winning.", "Top of the table."])
-        title = f"{F} stay top after beating {O} #Shorts"
+        titles = [("ld1", f"{F} win again and stay top of the {comp}"), ("ld2", f"{F} are still top: {fs}–{os_} vs {O}")]
     elif angle == "winless":
         big = f"{Fr['played']} GAMES"
         sub = "Still no win"
         say = [L(N(Fr["played"]), "games."), L("Still no win for", P(T(F), "."))]
-        q, q_say = ("Will they", "stay up?"), L("Will they stay up?")
+        q, q_say = ("What has", "gone wrong?"), L("What has gone wrong?")
         note = "The wait goes on."
-        title = f"{F} still winless after {Fr['played']} games 😬 #Shorts"
+        titles = [("wl1", f"{F} still haven't won in {Fr['played']} games 😬"), ("wl2", f"What is going on at {F}?")]
     else:
         big = "FULL-TIME"
         sub = comp
@@ -271,7 +314,9 @@ def build_story(c, day, next_match, all_matches, rng):
         say = [L("Full-time in the", P(comp_token(comp), ".")), _result_line(home, away, hs, as_)]
         q, q_say = ("Who impressed", "you most?"), L("Who impressed you most?")
         note = comp
-        title = f"{home} {hs}–{as_} {away} | {comp} #Shorts"
+        titles = [("rs1", f"{res} | {comp}"), ("rs2", f"Full-time: {res}")]
+    tpl, title = choose(rng, titles, recent_tpls)
+    title = f"{title} #Shorts"
 
     scenes = [{"type": "hook", "tag": date_tag, "team": team_big, "big": big, "score": scoreline,
                "sub": sub, "say": say}]
@@ -282,13 +327,14 @@ def build_story(c, day, next_match, all_matches, rng):
         score_say = [L(T(F), "were", SC(fh, oh), "down at halftime."), L("They won", P(SC(fs, os_), "."))]
     else:
         score_say = []
-        if ht_pair and ht_pair != [hs, as_] and angle not in ("goal_fest", "top_clash", "result", "thrashing"):
+        if ht_pair and ht_pair != [hs, as_] and angle not in ("goal_fest", "top_clash", "big_game", "result",
+                                                               "thrashing"):
             score_say.append(L(SC(*ht_pair), "at halftime."))
         score_say.append(L("Final score,", T(home), P(N(hs), ","), T(away), P(N(as_), ".")))
     scenes.append({"type": "score", "tag": "FULL-TIME", "home": home, "away": away, "hs": hs, "as": as_,
                    "ht": ht_pair, "focus": focus, "note": note, "say": score_say})
 
-    # --- stand (of, als die er niet is, seizoensvergelijking / uitslagen)
+    # --- stand (of, als die er niet is, seizoensvergelijking)
     table = c["table"]
     idx = next((i for i, r in enumerate(table) if Fr and r["id"] == Fr["id"]), None)
     if Fr and table and idx is not None:
@@ -318,16 +364,9 @@ def build_story(c, day, next_match, all_matches, rng):
                 ["WINS", Fr["won"], Or["won"], ""]]
         scenes.append({"type": "bars", "tag": label, "left": F, "right": O, "rows": rows,
                        "say": [L("This season,", T(F), "have", N(Fr["won"]), "wins from", N(Fr["played"]), "games.")]})
-    elif angle == "result":
-        same = [x for x in all_matches if x["competition"]["code"] == code and x.get("status") == "FINISHED"]
-        res = [[team_name(x["homeTeam"]), f"{x['score']['fullTime']['home']}–{x['score']['fullTime']['away']}",
-                team_name(x["awayTeam"])] for x in same[:5]]
-        if len(res) > 1:
-            scenes.append({"type": "results", "tag": "TODAY'S RESULTS", "sub": comp, "rows": res,
-                           "say": [L("Here are today's", comp_token(comp), "results.")]})
 
-    # --- volgende match
-    if next_match:
+    # --- volgende match: enkel als die het verhaal afmaakt (korter = meer mensen kijken tot het einde)
+    if next_match and angle in ("perfect_run", "winless", "first_win"):
         nh, na = team_name(next_match["homeTeam"]), team_name(next_match["awayTeam"])
         when = datetime.fromisoformat(next_match["utcDate"].replace("Z", "+00:00")).astimezone(TZ)
         focus_id = m["homeTeam" if focus == "home" else "awayTeam"]["id"]
@@ -349,16 +388,16 @@ def build_story(c, day, next_match, all_matches, rng):
                    "follow": pick(rng, FOLLOW), "captions": False,
                    "say": [q_say, L(pick(rng, ["Comment below!", "Let me know in the comments!"]))]})
 
-    tags = [comp_tag, "#football", "#soccer", "#" + "".join(ch for ch in F if ch.isalnum())]
-    desc = (f"{home} {hs}–{as_} {away} ({comp}). "
-            f"{' '.join(t[0] for t in say[0])} {sub}.\n\n" + " ".join(["#Shorts"] + tags))
+    opp_team = m["awayTeam" if focus == "home" else "homeTeam"]
+    tags = ["#Shorts", hashtag(F)] + ([hashtag(O)] if tier(opp_team) else []) + [comp_tag, "#football", "#soccer"]
+    desc = (f"{res} ({comp}). {' '.join(t[0] for t in say[0])} {sub[:1].upper() + sub[1:].rstrip(".")}. "
+            f"{q[0]} {q[1]} Comment below!\n\n" + " ".join(tags))
     title = title if len(title) <= 100 else title[:97] + "…"
-    meta = {"title": title, "description": desc,
-            "tags": ["football", "soccer", comp, F, O, "shorts"],
+    meta = {"title": title, "description": desc, "tpl": tpl,
+            "tags": ["football", "soccer", comp, F, O, f"{F} vs {O}", "shorts"],
             "angle": angle, "teams": [m["homeTeam"]["id"], m["awayTeam"]["id"]], "competition": code,
             "focus_team": m["homeTeam" if focus == "home" else "awayTeam"]["id"],
-            "opp_team": m["awayTeam" if focus == "home" else "homeTeam"]["id"],
-            "focus_name": F, "opp_name": O}
+            "opp_team": opp_team["id"], "focus_name": F, "opp_name": O}
     return {"scenes": scenes}, meta
 
 
@@ -402,10 +441,134 @@ def build_table_story(code, table, day, next_match, rng):
     return {"scenes": scenes}, meta
 
 
-def publish_time(now_utc, slot="22"):
-    """Vandaag om 13:00 of 22:00 Brussel (volgens het slot); te dichtbij of voorbij -> binnen 20 minuten."""
+# ------------------------------------------------------------------ voorbeschouwing + poll (13:00)
+def pick_preview(matches, after_utc, rng=None):
+    """Grootste wedstrijd van vandaag die nog moet beginnen, met minstens één bekende club."""
+    best, best_s = None, 0.0
+    for m in matches:
+        if m.get("status") not in ("SCHEDULED", "TIMED"):
+            continue
+        code = m["competition"]["code"]
+        if code not in COMPETITIONS:
+            continue
+        ko = datetime.fromisoformat(m["utcDate"].replace("Z", "+00:00"))
+        if ko < after_utc:
+            continue
+        th, ta = tier(m["homeTeam"]), tier(m["awayTeam"])
+        if max(th, ta) < 0.75:
+            continue
+        s = (max(th, ta) + 1.2 * min(th, ta)) * COMPETITIONS[code][2] * (CL_BOOST if code == "CL" else 1.0)
+        if s > best_s:
+            best, best_s = m, s
+    return best
+
+
+def build_preview_story(m, table, form_h, form_a, rng, recent_tpls=()):
+    code = m["competition"]["code"]
+    comp, comp_tag, _ = COMPETITIONS[code]
+    home, away = team_name(m["homeTeam"]), team_name(m["awayTeam"])
+    ko = datetime.fromisoformat(m["utcDate"].replace("Z", "+00:00")).astimezone(TZ)
+    when = "TONIGHT" if ko.hour >= 18 else "TODAY"
+    rows = {r["id"]: r for r in table}
+    Hr, Ar = rows.get(m["homeTeam"]["id"]), rows.get(m["awayTeam"]["id"])
+
+    scenes = [{"type": "preview", "tag": f"{when} · {comp.upper()}", "a": home, "b": away,
+               "chip": "WHO WINS?", "min_dur": 2.6}]
+    if form_h and form_a:
+        scenes.append({"type": "form", "tag": "LAST 5 GAMES", "rows": [[home, form_h], [away, form_a]],
+                       "min_dur": 3.4})
+    if Hr and Ar:
+        label = "LEAGUE PHASE" if code == "CL" else "THIS SEASON"
+        scenes.append({"type": "bars", "tag": label, "left": home, "right": away,
+                       "rows": [["POSITION", Hr["pos"], Ar["pos"], "pos"], ["POINTS", Hr["pts"], Ar["pts"], ""],
+                                ["GOALS SCORED", Hr["gf"], Ar["gf"], ""]],
+                       "min_dur": 3.6})
+    scenes.append({"type": "poll", "q": "WHO WINS?", "home": home, "away": away,
+                   "follow": pick(rng, FOLLOW).upper(), "min_dur": 4.2})
+
+    titles = [("pv1", f"{home} vs {away} {when.lower()}: who wins? 🤔"),
+              ("pv2", f"{home} or {away}? Make your prediction 👇"),
+              ("pv3", f"Who wins {home} vs {away}?")]
+    tpl, title = choose(rng, titles, recent_tpls)
+    tags = ["#Shorts", hashtag(home), hashtag(away), comp_tag, "#football", "#soccer"]
+    desc = (f"{home} vs {away} ({comp}), {when.lower()}. Who wins? "
+            f"Comment 1 for {home}, X for a draw or 2 for {away}!\n\n" + " ".join(tags))
+    meta = {"title": f"{title} #Shorts", "description": desc, "tpl": tpl,
+            "tags": ["football", "soccer", comp, home, away, f"{home} vs {away}", "prediction", "shorts"],
+            "angle": "preview", "teams": [m["homeTeam"]["id"], m["awayTeam"]["id"]], "competition": code,
+            "focus_team": m["homeTeam"]["id"], "opp_team": m["awayTeam"]["id"],
+            "focus_name": home, "opp_name": away, "match": m["id"], "kind": "preview"}
+    return {"scenes": scenes}, meta
+
+
+# ------------------------------------------------------------------ quiz (wekelijks en als reserve)
+QUIZ_TYPES = [
+    # sleutel, vraag, veld, hoger is beter?, eenheid
+    ("most_scored", "Which club has scored the most goals?", "gf", True, "GOALS"),
+    ("fewest_conceded", "Which club has conceded the fewest goals?", "ga", False, "CONCEDED"),
+    ("most_points", "Which club has the most points?", "pts", True, "POINTS"),
+    ("most_wins", "Which club has won the most games?", "won", True, "WINS"),
+    ("most_lost", "Which club has lost the most games?", "lost", True, "DEFEATS"),
+]
+
+
+def build_quiz_story(rows_by_comp, day, rng, recent_tpls=()):
+    """rows_by_comp: {code: tabelrijen}. Vier bekende clubs, één vraag, aftellen, antwoord."""
+    pool = []
+    for code, rows in rows_by_comp.items():
+        for r in rows:
+            t = tier({"shortName": r["name"], "id": r["id"]})
+            if t >= 0.75 and r["played"] >= 3:
+                pool.append(dict(r, code=code, tier=t))
+    if len(pool) < 4:
+        return None, None
+    types = [q for q in QUIZ_TYPES if q[0] not in recent_tpls] or QUIZ_TYPES
+    rng.shuffle(types)
+    for key, question, field, higher, unit in types:
+        for _ in range(30):
+            opts = rng.sample(pool, 4)
+            vals = [o[field] for o in opts]
+            best = max(vals) if higher else min(vals)
+            if vals.count(best) == 1 and len(set(vals)) >= 3:
+                break
+        else:
+            continue
+        ans = vals.index(best)
+        q_up = question.upper()
+        comps = sorted({COMPETITIONS[o["code"]][0] for o in opts})
+        scenes = [
+            {"type": "quiz_q", "q": q_up, "sub": "LEAGUE GAMES THIS SEASON", "opts": [o["name"] for o in opts],
+             "min_dur": 7.2},
+            {"type": "quiz_reveal", "q": q_up, "answer": ans, "unit": unit,
+             "opts": [[o["name"], o[field], o["played"]] for o in opts], "min_dur": 4.4},
+            {"type": "cta", "q1": "How many", "q2": "got it right?", "q3": "", "q4": "Comment below",
+             "follow": pick(rng, FOLLOW), "captions": False,
+             "say": [L("Did you get it right?"), L("Comment your answer!")]},
+        ]
+        titles = [(key + "_a", f"Football quiz: {question[0].lower() + question[1:]} 🤔"),
+                  (key + "_b", f"Only real fans get this right: {question}"),
+                  (key + "_c", f"Can you guess? {question}")]
+        tpl, title = choose(rng, titles, recent_tpls)
+        tags = ["#Shorts", "#footballquiz", "#quiz"] + [hashtag(o["name"]) for o in opts] + ["#football", "#soccer"]
+        desc = (f"{question} {', '.join(o['name'] for o in opts)} — league games this season "
+                f"({', '.join(comps)}). Comment your answer before the reveal!\n\n" + " ".join(tags))
+        meta = {"title": f"{title} #Shorts", "description": desc, "tpl": key,
+                "tags": ["football", "soccer", "football quiz", "quiz"] + [o["name"] for o in opts] + ["shorts"],
+                "angle": "quiz", "teams": [o["id"] for o in opts], "competition": opts[ans]["code"],
+                "focus_team": opts[0]["id"], "opp_team": opts[1]["id"],
+                "focus_name": opts[0]["name"], "opp_name": opts[1]["name"], "match": None, "kind": "quiz"}
+        return {"scenes": scenes}, meta
+    return None, None
+
+
+def publish_time(now_utc, slot="13"):
+    """Slot 13: vandaag om 13:00 Brussel (te dichtbij of voorbij -> binnen 15 minuten).
+    Slot 23 (laat op de avond, na de laatste wedstrijden): zo snel mogelijk, binnen 10 minuten."""
     local = now_utc.astimezone(TZ)
-    target = local.replace(hour=int(slot), minute=0, second=0, microsecond=0)
-    if target - local < timedelta(minutes=20):
-        target = local + timedelta(minutes=20)
+    if slot == "23":
+        target = local + timedelta(minutes=10)
+    else:
+        target = local.replace(hour=int(slot), minute=0, second=0, microsecond=0)
+        if target - local < timedelta(minutes=15):
+            target = local + timedelta(minutes=15)
     return target.astimezone(ZoneInfo("UTC")).strftime("%Y-%m-%dT%H:%M:%SZ")

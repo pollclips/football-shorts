@@ -1,21 +1,24 @@
 # Football Shorts – twee keer per dag automatisch een YouTube Short
 
-Twee video's per dag, online om **13:00** en **22:00 (Brusselse tijd)**:
+Twee video's per dag (Brusselse tijd), alleen over **topclubs** (Real, Barça, City, Liverpool, Arsenal, United,
+Chelsea, PSG, Bayern, Juve, Inter, Milan …), **Champions League krijgt voorrang**:
 
-| Online | Run | Verhaal |
+| Online | Run | Formaat |
 |---|---|---|
-| 13:00 | ±12:20 | beste nog niet gebruikte verhaal van **gisteren** (ook de late avondmatchen, bv. Champions League) |
-| 22:00 | ±21:20 | beste verhaal van de wedstrijden van **vandaag** die al gedaan zijn |
+| 13:00 | ±12:20 | **Voorbeschouwing + poll** van de grootste wedstrijd van vandaag ("Who wins? Comment 1, X or 2"). **Maandag: quiz.** Geen grote wedstrijd? Dan het beste verslag van gisteren, anders een quiz. |
+| ±23:30 | ±23:15 | **Verslag** van het beste verhaal van vandaag, ook de avondmatchen (21:00, Champions League). Geen topclub gespeeld? Dan een quiz. |
 
-Geen (nieuwe) wedstrijden? Dan een klassement-verhaal, telkens een andere competitie.
+Opbouw volgens wat bekend is over het Shorts-algoritme: de haak staat op het eerste beeld, video's van ±14–22 s
+(meer mensen kijken tot het einde), elke video eindigt met een vraag (comments), titels beginnen met de clubnaam
+en wisselen van vorm, en drie formaten wisselen elkaar af zodat het niet als massaproductie oogt.
+Geen stem meer: enkel muziek en tekst in beeld.
 
-1. **GitHub Actions** haalt uitslagen en standen op bij football-data.org (gratis).
-2. Het script kiest het sterkste verhaal: perfecte reeks, comeback, verrassing, topper, doelpuntenfestijn, eerste zege …
-   Een wedstrijd wordt nooit twee keer gebruikt.
-3. Het maakt een Engelse Short van 1080×1920 in **broadcast-stijl**: een stem vertelt het verhaal, woorden en
-   cijfers slaan binnen op het moment dat ze gezegd worden, clubkleuren, kleur-wipes en geluidseffecten.
+1. **GitHub Actions** haalt uitslagen, standen en vorm op bij football-data.org (gratis).
+2. Het script kiest het formaat en het verhaal (verlies van een grote club, perfecte reeks, comeback, topper …).
+   Een wedstrijd wordt nooit twee keer als verslag gebruikt.
+3. Het maakt een Engelse Short van 1080×1920 in **broadcast-stijl** (clubkleuren, kleur-wipes, geluidseffecten).
 4. De video komt op de tak `media` (die houdt enkel de laatste dagen bij) en wordt doorgestuurd naar **Make**.
-5. Make zet hem op YouTube, ingepland voor 13:00 of 22:00 (privé tot dat moment, daarna publiek).
+5. Make zet hem op YouTube (13:00 ingepland, de avondvideo meteen).
 
 Kosten: €0 (GitHub publieke repo, football-data.org gratis plan, Make gratis plan).
 
@@ -56,7 +59,8 @@ Repository → **Settings → Secrets and variables → Actions → New reposito
 ## Handmatig starten
 **Actions → Daily football Short → Run workflow**
 
-- `slot` – `auto` (volgens het uur), `13` of `22`
+- `slot` – `auto` (volgens het uur), `13` of `23`
+- `format` – `auto`, `recap` (verslag), `preview` (voorbeschouwing + poll) of `quiz`
 - `auto` – nieuwe video maken en posten
 - `test` – de voorbeeldvideo (Man City 7 from 7) naar Make sturen
 - `dry-run` – enkel maken; de video staat dan als download onder de run (*Artifacts*)
@@ -65,11 +69,10 @@ Repository → **Settings → Secrets and variables → Actions → New reposito
 - `force` aanvinken – opnieuw maken, ook als er vandaag al een video is
 
 ## Stem
+Standaard staat de stem **uit** (enkel muziek). Wil je ze toch voor één video: vul bij *Run workflow* een stem in (bv. `am_michael`).
 De voice-over komt van **Kokoro** (open-source, draait gratis in GitHub Actions; het model wordt één keer
-gedownload en daarna bewaard in de cache). Standaardstem: `am_michael`.
-Andere stem kiezen voor elke video: **Settings → Secrets and variables → Actions → Variables →
-New repository variable**, naam `VOICE`, waarde bv. `bm_george` (Brits) of `af_heart`.
-Lukt de stem een keer niet, dan wordt de video toch gemaakt (met ondertitels, zonder stem).
+gedownload en daarna bewaard in de cache). Andere stemmen: bv. `bm_george` (Brits) of `af_heart`.
+Lukt de stem een keer niet, dan wordt de video toch gemaakt (zonder stem).
 
 ## Muziek
 Zet nummers uit de gratis YouTube Audiotheek in `music/`. Leeg = zelfgemaakte rechtenvrije beat.

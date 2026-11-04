@@ -67,15 +67,15 @@ def _spread(tokens, s0, s1):
 
 class Narrator:
     def __init__(self, voice=None, speed=None):
-        self.voice = voice or os.environ.get("VOICE", "am_michael")
+        self.voice = voice or os.environ.get("VOICE", "none")
         self.speed = float(speed or os.environ.get("VOICE_SPEED", "1.12"))
         self.k = None
         self.timed = False
         self.error = None
         self.exact = 0
         self.spread = 0
-        if os.environ.get("NO_VOICE"):
-            self.error = "NO_VOICE gezet"
+        if os.environ.get("NO_VOICE") or self.voice.strip().lower() in ("", "none", "off", "geen"):
+            self.error = "stem uitgeschakeld (enkel muziek)"
             return
         model, voices = MODEL_DIR / "kokoro-v1.0.onnx", MODEL_DIR / "voices-v1.0.bin"
         if not (model.exists() and voices.exists()):
@@ -166,7 +166,7 @@ def narrate(story, narrator, out_wav, build_timeline):
                                 "words": [(d, round(t + a, 3), round(t + b, 3)) for d, a, b in ws]})
             t += len(audio) / SR + GAP
         voice_end = (t - GAP) if clips else 0.0
-        sc["dur"] = round(max(MIN_DUR.get(sc["type"], 3.0), voice_end + TAIL), 2)
+        sc["dur"] = round(max(sc.get("min_dur") or MIN_DUR.get(sc["type"], 3.0), voice_end + TAIL), 2)
         per_scene.append(clips)
 
     timeline, total = build_timeline(story)
