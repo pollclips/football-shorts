@@ -1,0 +1,173 @@
+{
+  "story": {
+    "scenes": [
+      {
+        "type": "preview",
+        "tag": "TONIGHT · CHAMPIONS LEAGUE",
+        "a": "Fenerbahçe",
+        "b": "Liverpool",
+        "chip": "WHO WINS?",
+        "min_dur": 2.6,
+        "lines": [],
+        "dur": 2.6
+      },
+      {
+        "type": "form",
+        "tag": "LAST 5 GAMES",
+        "rows": [
+          [
+            "Fenerbahçe",
+            [
+              "L",
+              "D"
+            ]
+          ],
+          [
+            "Liverpool",
+            [
+              "W",
+              "W",
+              "W",
+              "W",
+              "L"
+            ]
+          ]
+        ],
+        "min_dur": 3.4,
+        "lines": [],
+        "dur": 3.4
+      },
+      {
+        "type": "bars",
+        "tag": "LEAGUE PHASE",
+        "left": "Fenerbahçe",
+        "right": "Liverpool",
+        "rows": [
+          [
+            "POSITION",
+            31,
+            4,
+            "pos"
+          ],
+          [
+            "POINTS",
+            2,
+            9,
+            ""
+          ],
+          [
+            "GOALS SCORED",
+            3,
+            12,
+            ""
+          ]
+        ],
+        "min_dur": 3.6,
+        "lines": [],
+        "dur": 3.6
+      },
+      {
+        "type": "poll",
+        "q": "WHO WINS?",
+        "home": "Fenerbahçe",
+        "away": "Liverpool",
+        "follow": "FOLLOW FOR A NEW STORY EVERY DAY",
+        "min_dur": 4.2,
+        "lines": [],
+        "dur": 4.2
+      }
+    ],
+    "captions": []
+  },
+  "meta": {
+    "title": "Who wins Fenerbahçe vs Liverpool? #Shorts",
+    "description": "Fenerbahçe vs Liverpool (Champions League), tonight. Who wins? Comment 1 for Fenerbahçe, X for a draw or 2 for Liverpool!\n\n#Shorts #Fenerbahçe #Liverpool #ChampionsLeague #football #soccer",
+    "tpl": "pv3",
+    "tags": [
+      "football",
+      "soccer",
+      "Champions League",
+      "Fenerbahçe",
+      "Liverpool",
+      "Fenerbahçe vs Liverpool",
+      "prediction",
+      "shorts"
+    ],
+    "angle": "preview",
+    "teams": [
+      613,
+      64
+    ],
+    "competition": "CL",
+    "focus_team": 613,
+    "opp_team": 64,
+    "focus_name": "Fenerbahçe",
+    "opp_name": "Liverpool",
+    "match": 575387,
+    "kind": "preview"
+  },
+  "theme": {
+    "fprim": [
+      253,
+      208,
+      0
+    ],
+    "fsec": [
+      0,
+      87,
+      184
+    ],
+    "oprim": [
+      214,
+      32,
+      39
+    ],
+    "bg": [
+      48,
+      43,
+      17
+    ],
+    "glow": [
+      143,
+      120,
+      9
+    ],
+    "acc": [
+      253,
+      208,
+      0
+    ],
+    "foc": [
+      253,
+      208,
+      0
+    ],
+    "opp": [
+      222,
+      77,
+      82
+    ],
+    "on_acc": [
+      9,
+      13,
+      22
+    ],
+    "stripe_a": [
+      253,
+      208,
+      0
+    ],
+    "stripe_b": [
+      0,
+      87,
+      184
+    ],
+    "opp_tint": [
+      42,
+      15,
+      23
+    ],
+    "style": "diag",
+    "hook_layout": "team_top"
+  }
+}
