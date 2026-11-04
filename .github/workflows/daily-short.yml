@@ -129,6 +129,7 @@ jobs:
         env:
           FOOTBALL_DATA_API_KEY: ${{ secrets.FOOTBALL_DATA_API_KEY }}
         run: |
+          set -o pipefail
           mkdir -p out
           python -m shorts.main 2>&1 | tee out/run.log
 

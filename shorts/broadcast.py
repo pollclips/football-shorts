@@ -627,8 +627,11 @@ class BarsShot(Shot):
             x0, x1, by = 90, W - 90, y + 180
             split = x0 + (x1 - x0) * share
             d.rectangle([x0, by, x1, by + 26], fill=(255, 255, 255, int(40 * e)))
-            d.rectangle([split - (split - x0) * k, by, split - 4, by + 26], fill=p.acc + (int(255 * e),))
-            d.rectangle([split + 4, by, split + (x1 - split) * k, by + 26], fill=(225, 228, 235, int(255 * e)))
+            lx0, rx1 = split - (split - x0) * k, split + (x1 - split) * k
+            if split - 4 - lx0 >= 1:
+                d.rectangle([lx0, by, split - 4, by + 26], fill=p.acc + (int(255 * e),))
+            if rx1 - (split + 4) >= 1:
+                d.rectangle([split + 4, by, rx1, by + 26], fill=(225, 228, 235, int(255 * e)))
 
 
 class PollShot(Shot):
