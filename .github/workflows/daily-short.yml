@@ -150,7 +150,7 @@ jobs:
           else
             git commit -m "Short $(date -u +%F' '%H:%M)"
             for i in 1 2 3 4; do
-              git pull --rebase -q origin "${{ github.ref_name }}" && git push -q origin "HEAD:${{ github.ref_name }}" && break
+              git pull --rebase --autostash -q origin "${{ github.ref_name }}" && git push -q origin "HEAD:${{ github.ref_name }}" && break
               echo "push poging $i mislukt, opnieuw"; sleep $((i * 5))
             done
           fi
@@ -192,7 +192,7 @@ jobs:
           else
             git commit -m "Preview $(date -u +%F' '%H:%M)"
             for i in 1 2 3 4; do
-              git pull --rebase -q origin "${{ github.ref_name }}" && git push -q origin "HEAD:${{ github.ref_name }}" && break
+              git pull --rebase --autostash -q origin "${{ github.ref_name }}" && git push -q origin "HEAD:${{ github.ref_name }}" && break
               echo "push poging $i mislukt, opnieuw"; sleep $((i * 5))
             done
           fi
