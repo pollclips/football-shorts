@@ -19,6 +19,9 @@ def main():
     if not url:
         sys.exit("MAKE_WEBHOOK_URL ontbreekt (zet hem als GitHub secret).")
     payload = json.loads((OUT / "payload.json").read_text())
+    local = OUT / "latest.mp4"
+    if local.exists() and local.stat().st_size > 5_000_000:
+        sys.exit(f"Video is {local.stat().st_size / 1e6:.1f} MB: Make (gratis) weigert alles boven 5 MB. Niet verstuurd.")
 
     # wacht tot GitHub de nieuwe video publiek serveert
     for _ in range(36):

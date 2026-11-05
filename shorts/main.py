@@ -23,7 +23,7 @@ import sys
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
-from . import broadcast, music, render, theme, voice
+from . import broadcast, encode, music, render, theme, voice
 from .data import COMPETITIONS, Api, table_rows
 from .story import (TZ, build_preview_story, build_quiz_story, build_story, build_table_story, candidates,
                     pick_preview, publish_time)
@@ -299,12 +299,14 @@ def main():
         return
     if mode == "dry-run":
         R.render(story, OUT / "latest.mp4", mix_wav, th)
+        encode.fit(OUT / "latest.mp4")
         print("proefvideo (niet verstuurd):", OUT / "latest.mp4")
         return
     if mode == "preview":
         PREVIEWS.mkdir(exist_ok=True)
         target = PREVIEWS / f"{today.isoformat()}-{slot}u-{meta.get('kind')}.mp4"
         R.render(story, target, mix_wav, th)
+        encode.fit(target)
         shutil.copy(target, OUT / "latest.mp4")
         shutil.copy(OUT / "story.json", PREVIEWS / f"{today.isoformat()}-{slot}u-story.json")
         cleanup(today)
@@ -312,6 +314,7 @@ def main():
         return
 
     R.render(story, VIDEOS / name, mix_wav, th)
+    encode.fit(VIDEOS / name)          # Make (gratis) weigert bestanden boven 5 MB
     shutil.copy(VIDEOS / name, OUT / "latest.mp4")
     print("video:", VIDEOS / name, f"{(VIDEOS / name).stat().st_size / 1e6:.1f} MB")
     (OUT / "video_name").write_text(name)
