@@ -369,5 +369,21 @@
     ],
     "match": 575388,
     "title": "Full-time: RB Leipzig 2–3 Man City #Shorts"
+  },
+  {
+    "date": "2026-11-06",
+    "pub": "2026-11-06",
+    "slot": "23",
+    "kind": "quiz",
+    "angle": "quiz",
+    "tpl": "fewest_conceded",
+    "teams": [
+      78,
+      73,
+      57,
+      5
+    ],
+    "match": null,
+    "title": "Football quiz: which club has conceded the fewest goals? 🤔 #Shorts"
   }
 ]
