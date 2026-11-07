@@ -385,5 +385,19 @@
     ],
     "match": null,
     "title": "Football quiz: which club has conceded the fewest goals? 🤔 #Shorts"
+  },
+  {
+    "date": "2026-11-07",
+    "pub": "2026-11-07",
+    "slot": "13",
+    "kind": "preview",
+    "angle": "preview",
+    "tpl": "pv1",
+    "teams": [
+      57,
+      322
+    ],
+    "match": 560640,
+    "title": "Arsenal vs Hull City today: who wins? 🤔 #Shorts"
   }
 ]
