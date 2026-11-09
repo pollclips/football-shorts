@@ -441,5 +441,21 @@
     ],
     "match": 560636,
     "title": "Chelsea lose to Sunderland 😳 #Shorts"
+  },
+  {
+    "date": "2026-11-09",
+    "pub": "2026-11-09",
+    "slot": "13",
+    "kind": "quiz",
+    "angle": "quiz",
+    "tpl": "most_wins",
+    "teams": [
+      64,
+      67,
+      524,
+      86
+    ],
+    "match": null,
+    "title": "Only real fans get this right: Which club has won the most games? #Shorts"
   }
 ]
