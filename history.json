@@ -457,5 +457,19 @@
     ],
     "match": null,
     "title": "Only real fans get this right: Which club has won the most games? #Shorts"
+  },
+  {
+    "date": "2026-11-08",
+    "pub": "2026-11-09",
+    "slot": "23",
+    "kind": "recap",
+    "angle": "big_game",
+    "tpl": "bg3",
+    "teams": [
+      66,
+      58
+    ],
+    "match": 560639,
+    "title": "Man United vs Aston Villa: who won the big one? #Shorts"
   }
 ]
