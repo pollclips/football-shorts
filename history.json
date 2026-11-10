@@ -471,5 +471,19 @@
     ],
     "match": 560639,
     "title": "Man United vs Aston Villa: who won the big one? #Shorts"
+  },
+  {
+    "date": "2026-11-08",
+    "pub": "2026-11-10",
+    "slot": "13",
+    "kind": "recap",
+    "angle": "big_game",
+    "tpl": "bg1",
+    "teams": [
+      78,
+      81
+    ],
+    "match": 564746,
+    "title": "Atlético 1–2 Barcelona | LaLiga #Shorts"
   }
 ]
