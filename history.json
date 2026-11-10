@@ -485,5 +485,21 @@
     ],
     "match": 564746,
     "title": "Atlético 1–2 Barcelona | LaLiga #Shorts"
+  },
+  {
+    "date": "2026-11-10",
+    "pub": "2026-11-10",
+    "slot": "23",
+    "kind": "quiz",
+    "angle": "quiz",
+    "tpl": "most_scored",
+    "teams": [
+      58,
+      67,
+      65,
+      78
+    ],
+    "match": null,
+    "title": "Only real fans get this right: Which club has scored the most goals? #Shorts"
   }
 ]
