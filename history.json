@@ -533,5 +533,21 @@
     ],
     "match": null,
     "title": "Only real fans get this right: Which club has the most points? #Shorts"
+  },
+  {
+    "date": "2026-11-12",
+    "pub": "2026-11-12",
+    "slot": "13",
+    "kind": "quiz",
+    "angle": "quiz",
+    "tpl": "fewest_conceded",
+    "teams": [
+      64,
+      81,
+      4,
+      113
+    ],
+    "match": null,
+    "title": "Only real fans get this right: Which club has conceded the fewest goals? #Shorts"
   }
 ]
