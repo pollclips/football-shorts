@@ -581,5 +581,21 @@
     ],
     "match": null,
     "title": "Can you guess? Which club has the most points? #Shorts"
+  },
+  {
+    "date": "2026-11-13",
+    "pub": "2026-11-13",
+    "slot": "23",
+    "kind": "quiz",
+    "angle": "quiz",
+    "tpl": "most_lost",
+    "teams": [
+      524,
+      98,
+      58,
+      86
+    ],
+    "match": null,
+    "title": "Only real fans get this right: Which club has lost the most games? #Shorts"
   }
 ]
