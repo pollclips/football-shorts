@@ -597,5 +597,21 @@
     ],
     "match": null,
     "title": "Only real fans get this right: Which club has lost the most games? #Shorts"
+  },
+  {
+    "date": "2026-11-14",
+    "pub": "2026-11-14",
+    "slot": "13",
+    "kind": "quiz",
+    "angle": "quiz",
+    "tpl": "most_lost",
+    "teams": [
+      67,
+      78,
+      4,
+      98
+    ],
+    "match": null,
+    "title": "Can you guess? Which club has lost the most games? #Shorts"
   }
 ]
