@@ -661,5 +661,21 @@
     ],
     "match": null,
     "title": "Only real fans get this right: Which club has the most points? #Shorts"
+  },
+  {
+    "date": "2026-11-16",
+    "pub": "2026-11-16",
+    "slot": "13",
+    "kind": "quiz",
+    "angle": "quiz",
+    "tpl": "most_scored",
+    "teams": [
+      73,
+      98,
+      86,
+      58
+    ],
+    "match": null,
+    "title": "Can you guess? Which club has scored the most goals? #Shorts"
   }
 ]
