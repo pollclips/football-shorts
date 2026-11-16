@@ -677,5 +677,21 @@
     ],
     "match": null,
     "title": "Can you guess? Which club has scored the most goals? #Shorts"
+  },
+  {
+    "date": "2026-11-16",
+    "pub": "2026-11-16",
+    "slot": "23",
+    "kind": "quiz",
+    "angle": "quiz",
+    "tpl": "most_scored",
+    "teams": [
+      524,
+      108,
+      113,
+      61
+    ],
+    "match": null,
+    "title": "Can you guess? Which club has scored the most goals? #Shorts"
   }
 ]
