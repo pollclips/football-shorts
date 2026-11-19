@@ -512,6 +512,11 @@ QUIZ_TYPES = [
     ("most_points", "Which club has the most points?", "pts", True, "POINTS"),
     ("most_wins", "Which club has won the most games?", "won", True, "WINS"),
     ("most_lost", "Which club has lost the most games?", "lost", True, "DEFEATS"),
+    ("fewest_lost", "Which club has lost the fewest games?", "lost", False, "DEFEATS"),
+    ("most_draws", "Which club has drawn the most games?", "draw", True, "DRAWS"),
+    ("best_gd", "Which club has the best goal difference?", "gd", True, "GOAL DIFF"),
+    ("fewest_scored", "Which club has scored the fewest goals?", "gf", False, "GOALS"),
+    ("most_conceded", "Which club has conceded the most goals?", "ga", True, "CONCEDED"),
 ]
 
 
@@ -522,7 +527,7 @@ def build_quiz_story(rows_by_comp, day, rng, recent_tpls=()):
         for r in rows:
             t = tier({"shortName": r["name"], "id": r["id"]})
             if t >= 0.75 and r["played"] >= 3:
-                pool.append(dict(r, code=code, tier=t))
+                pool.append(dict(r, code=code, tier=t, gd=r["gf"] - r["ga"]))
     if len(pool) < 4:
         return None, None
     types = [q for q in QUIZ_TYPES if q[0] not in recent_tpls] or QUIZ_TYPES
@@ -548,14 +553,18 @@ def build_quiz_story(rows_by_comp, day, rng, recent_tpls=()):
              "follow": pick(rng, FOLLOW), "captions": False,
              "say": [L("Did you get it right?"), L("Comment your answer!")]},
         ]
-        titles = [(key + "_a", f"Football quiz: {question[0].lower() + question[1:]} 🤔"),
-                  (key + "_b", f"Only real fans get this right: {question}"),
-                  (key + "_c", f"Can you guess? {question}")]
+        q_low = question[0].lower() + question[1:]
+        titles = [("qt_a", f"Football quiz: {q_low} 🤔"),
+                  ("qt_b", f"Only real fans get this right: {question}"),
+                  ("qt_c", f"Can you guess? {question}"),
+                  ("qt_d", f"99% get this wrong: {q_low}"),
+                  ("qt_e", f"Guess before the timer ends ⏱️ {question}"),
+                  ("qt_f", f"{' vs '.join(o['name'] for o in opts[:2])}… {q_low}")]
         tpl, title = choose(rng, titles, recent_tpls)
         tags = ["#Shorts", "#footballquiz", "#quiz"] + [hashtag(o["name"]) for o in opts] + ["#football", "#soccer"]
         desc = (f"{question} {', '.join(o['name'] for o in opts)} — league games this season "
                 f"({', '.join(comps)}). Comment your answer before the reveal!\n\n" + " ".join(tags))
-        meta = {"title": f"{title} #Shorts", "description": desc, "tpl": key,
+        meta = {"title": f"{title} #Shorts", "description": desc, "tpl": key, "tpl2": tpl,
                 "tags": ["football", "soccer", "football quiz", "quiz"] + [o["name"] for o in opts] + ["shorts"],
                 "angle": "quiz", "teams": [o["id"] for o in opts], "competition": opts[ans]["code"],
                 "focus_team": opts[0]["id"], "opp_team": opts[1]["id"],

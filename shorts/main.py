@@ -24,7 +24,7 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 from . import broadcast, encode, music, render, theme, voice
-from .data import COMPETITIONS, Api, table_rows
+from .data import COMPETITIONS, Api, table_rows, tier
 from .story import (TZ, build_preview_story, build_quiz_story, build_story, build_table_story, candidates,
                     pick_preview, publish_time)
 
@@ -82,19 +82,34 @@ def skip(msg):
     (OUT / "skip").write_text("1")
 
 
-def choose_slot(local, scheduled):
+def is_done(history, d, slot):
+    slots = (slot, "22") if slot == "23" else (slot,)
+    return any(h.get("pub") == d.isoformat() and h.get("slot") in slots for h in history)
+
+
+def choose_slot(local, scheduled, history):
+    """Welke video is nu aan de beurt? Geeft (slot, dag) of (None, None).
+
+    GitHub start geplande runs soms uren te laat. Daarom kijken we niet naar een smal uurvenster, maar naar
+    wat nog openstaat: de middagvideo van vandaag (vanaf 12:00 tot 23:00) en de avondvideo (vanaf 23:00 tot
+    de volgende ochtend 11:00, daarna is ze te oud en neemt de middagvideo het over).
+    """
     s = os.environ.get("SLOT", "").strip()
     if s == "22":
         s = "23"
     if s in SLOTS:
-        return s
-    if local.hour in (12, 13):
-        return "13"
-    if local.hour in (23, 0, 1):
-        return "23"
+        return s, (local.date() if (s == "13" or local.hour >= 12) else local.date() - timedelta(days=1))
+    h = local.hour
+    if h >= 23 or h < 11:
+        d = local.date() if h >= 23 else local.date() - timedelta(days=1)
+        if not is_done(history, d, "23"):
+            return "23", d
+    elif h >= 12 and not is_done(history, local.date(), "13"):
+        return "13", local.date()
     if scheduled:
-        return None        # de 'andere' tijdzone-start (zomer/winter) of te vroeg: niets doen
-    return "13" if 5 <= local.hour < 17 else "23"
+        return None, None
+    # handmatig gestart zonder slot en niets open: volgens het uur (de dubbel-controle volgt nog)
+    return ("13", local.date()) if 5 <= h < 17 else ("23", local.date() if h >= 17 else local.date() - timedelta(days=1))
 
 
 def local_day(m):
@@ -102,7 +117,7 @@ def local_day(m):
 
 
 # ------------------------------------------------------------------ formaten
-def make_recap(api, days, history, rng, recent_tpls, trial):
+def make_recap(api, days, history, rng, recent_tpls, trial, min_tier=0.0):
     recent = set() if trial else {t for h in history[-4:] if h.get("kind", "recap") == "recap"
                                   for t in h.get("teams", [])}
     used_ids = {h["match"] for h in history[-24:] if h.get("match") and h.get("kind", "recap") == "recap"}
@@ -134,7 +149,12 @@ def make_recap(api, days, history, rng, recent_tpls, trial):
             c["day"] = d
             cands.append(c)
     cands.sort(key=lambda c: c["score"], reverse=True)
+    if min_tier:
+        cands = [c for c in cands if tier(c["match"]["homeTeam" if c["focus"] == "home" else "awayTeam"]) >= min_tier
+                 or (c["angle"] in ("big_game", "top_clash", "goal_fest", "result")
+                     and max(tier(c["match"]["homeTeam"]), tier(c["match"]["awayTeam"])) >= min_tier)]
     if not cands:
+        print("geen verslag met een wereldclub; reserveformaat")
         return None, None, None
     best = cands[0]
     day = best["day"]
@@ -205,11 +225,10 @@ def main():
     VIDEOS.mkdir(exist_ok=True)
     trial = mode in ("dry-run", "preview")
 
-    # GitHub kent geen tijdzones: per slot staan er twee geplande starts (zomer- en winteruur).
-    slot = choose_slot(local, bool(os.environ.get("SCHEDULED")))
+    history = json.loads(HISTORY.read_text()) if HISTORY.exists() else []
+    slot, today = choose_slot(local, bool(os.environ.get("SCHEDULED")), history)
     if slot is None:
-        return skip(f"Geplande start om {local:%H:%M} Brusselse tijd valt buiten de vensters; overslaan.")
-    today = local.date() if local.hour >= 5 else local.date() - timedelta(days=1)
+        return skip(f"Start om {local:%H:%M} Brusselse tijd: geen video open (alles al gemaakt); overslaan.")
     if trial and os.environ.get("DAY", "").strip():
         today = date.fromisoformat(os.environ["DAY"].strip())
     key_day = today
@@ -226,14 +245,17 @@ def main():
         write_payload(name, meta, now, slot)
         return
 
-    history = json.loads(HISTORY.read_text()) if HISTORY.exists() else []
-    done = any(h.get("pub") == key_day.isoformat() and h.get("slot") == slot for h in history)
+    done = is_done(history, key_day, slot)
     if not trial and done and not os.environ.get("FORCE"):
         return skip(f"Voor {key_day} slot {slot} is er al een video; stop (FORCE=1 om toch opnieuw te maken).")
-    recent_tpls = set() if trial else {h.get("tpl") for h in history[-10:] if h.get("tpl")}
+    recent_tpls = set() if trial else ({h.get("tpl") for h in history[-6:] if h.get("tpl")}
+                                       | {h.get("tpl2") for h in history[-4:] if h.get("tpl2")})
 
+    # Cijfers van het kanaal (nov 2026): quizzen ±100-900 views, verslagen ±20-300.
+    # Daarom: 13:00 elke dag een quiz; 's avonds een verslag als er een wereldclub in speelt, anders ook een quiz.
+    strict_recap = fmt == "auto"
     if fmt == "auto":
-        fmt = ("quiz" if today.weekday() == 0 else "preview") if slot == "13" else "recap"
+        fmt = "quiz" if slot == "13" else "recap"
     order = {"preview": ["preview", "recap", "quiz", "table"],
              "recap": ["recap", "quiz", "table"],
              "quiz": ["quiz", "recap", "table"]}.get(fmt, ["recap", "quiz", "table"])
@@ -248,7 +270,8 @@ def main():
         elif f == "recap":
             days = [today, today - timedelta(days=1)] if slot == "23" else [today - timedelta(days=1),
                                                                            today - timedelta(days=2)]
-            story, meta, d = make_recap(api, days, history, rng, recent_tpls, trial)
+            story, meta, d = make_recap(api, days, history, rng, recent_tpls, trial,
+                                        min_tier=1.0 if strict_recap and order[0] == "recap" else 0.0)
             day = d or day
         elif f == "quiz":
             story, meta = make_quiz(api, today, rng, recent_tpls)
@@ -320,7 +343,7 @@ def main():
     (OUT / "video_name").write_text(name)
 
     history.append({"date": day.isoformat(), "pub": key_day.isoformat(), "slot": slot, "kind": meta.get("kind"),
-                    "angle": meta["angle"], "tpl": meta.get("tpl"), "teams": meta["teams"],
+                    "angle": meta["angle"], "tpl": meta.get("tpl"), "tpl2": meta.get("tpl2"), "teams": meta["teams"],
                     "match": meta.get("match"), "title": meta["title"]})
     HISTORY.write_text(json.dumps(history[-80:], indent=2, ensure_ascii=False))
     cleanup(today)
