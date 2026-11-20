@@ -743,5 +743,22 @@
     ],
     "match": null,
     "title": "Football quiz: which club has conceded the most goals? 🤔 #Shorts"
+  },
+  {
+    "date": "2026-11-20",
+    "pub": "2026-11-20",
+    "slot": "13",
+    "kind": "quiz",
+    "angle": "quiz",
+    "tpl": "best_gd",
+    "tpl2": "qt_f",
+    "teams": [
+      113,
+      86,
+      4,
+      524
+    ],
+    "match": null,
+    "title": "Napoli vs Real Madrid… which club has the best goal difference? #Shorts"
   }
 ]
