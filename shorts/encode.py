@@ -35,11 +35,18 @@ def fit(path, limit=LIMIT):
             v_kbps = max(400, int(target * 8 / 1000 / dur - AUDIO_KBPS))
             common = ["-c:v", "libx264", "-preset", "medium", "-b:v", f"{v_kbps}k",
                       "-maxrate", f"{int(v_kbps * 1.4)}k", "-bufsize", f"{v_kbps * 2}k",
-                      "-pix_fmt", "yuv420p", "-passlogfile", log]
-            subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(path), *common, "-pass", "1",
-                            "-an", "-f", "mp4", os.devnull], check=True)
-            subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(path), *common, "-pass", "2",
-                            "-c:a", "aac", "-b:a", f"{AUDIO_KBPS}k", "-movflags", "+faststart", out], check=True)
+                      "-pix_fmt", "yuv420p"]
+            try:
+                # ':v' = enkel de video in 2 passes (nieuwere ffmpeg past '-pass' anders ook toe op de audio)
+                subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(path), *common,
+                                "-passlogfile:v", log, "-pass:v", "1", "-an", "-f", "mp4", os.devnull], check=True)
+                subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(path), *common,
+                                "-passlogfile:v", log, "-pass:v", "2", "-c:a", "aac", "-b:a", f"{AUDIO_KBPS}k",
+                                "-movflags", "+faststart", out], check=True)
+            except subprocess.CalledProcessError:
+                print("2-pass lukte niet; 1-pass met vaste bitrate")
+                subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(path), *common,
+                                "-c:a", "aac", "-b:a", f"{AUDIO_KBPS}k", "-movflags", "+faststart", out], check=True)
             new = os.path.getsize(out)
             print(f"gecomprimeerd: {size / 1e6:.1f} MB -> {new / 1e6:.1f} MB ({v_kbps} kbps)")
             if new <= limit:
