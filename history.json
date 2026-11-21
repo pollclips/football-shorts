@@ -792,5 +792,22 @@
     ],
     "match": null,
     "title": "Only real fans get this right: Which club has scored the fewest goals? #Shorts"
+  },
+  {
+    "date": "2026-11-21",
+    "pub": "2026-11-21",
+    "slot": "23",
+    "kind": "quiz",
+    "angle": "quiz",
+    "tpl": "most_lost",
+    "tpl2": "qt_d",
+    "teams": [
+      73,
+      61,
+      78,
+      67
+    ],
+    "match": null,
+    "title": "99% get this wrong: which club has lost the most games? #Shorts"
   }
 ]
