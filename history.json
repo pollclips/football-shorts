@@ -760,5 +760,20 @@
     ],
     "match": null,
     "title": "Napoli vs Real Madrid… which club has the best goal difference? #Shorts"
+  },
+  {
+    "date": "2026-11-20",
+    "pub": "2026-11-20",
+    "slot": "23",
+    "kind": "recap",
+    "angle": "result",
+    "tpl": "rs2",
+    "tpl2": null,
+    "teams": [
+      5,
+      1
+    ],
+    "match": 565859,
+    "title": "Full-time: Bayern 1–1 1. FC Köln #Shorts"
   }
 ]
