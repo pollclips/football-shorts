@@ -775,5 +775,22 @@
     ],
     "match": 565859,
     "title": "Full-time: Bayern 1–1 1. FC Köln #Shorts"
+  },
+  {
+    "date": "2026-11-21",
+    "pub": "2026-11-21",
+    "slot": "13",
+    "kind": "quiz",
+    "angle": "quiz",
+    "tpl": "fewest_scored",
+    "tpl2": "qt_b",
+    "teams": [
+      113,
+      524,
+      78,
+      66
+    ],
+    "match": null,
+    "title": "Only real fans get this right: Which club has scored the fewest goals? #Shorts"
   }
 ]
