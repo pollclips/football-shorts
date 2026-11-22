@@ -826,5 +826,20 @@
     ],
     "match": null,
     "title": "Football quiz: which club has scored the most goals? 🤔 #Shorts"
+  },
+  {
+    "date": "2026-11-22",
+    "pub": "2026-11-22",
+    "slot": "23",
+    "kind": "recap",
+    "angle": "thrashing",
+    "tpl": "th2",
+    "tpl2": null,
+    "teams": [
+      64,
+      66
+    ],
+    "match": 560645,
+    "title": "Liverpool put 4 past Man United #Shorts"
   }
 ]
