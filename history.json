@@ -841,5 +841,22 @@
     ],
     "match": 560645,
     "title": "Liverpool put 4 past Man United #Shorts"
+  },
+  {
+    "date": "2026-11-23",
+    "pub": "2026-11-23",
+    "slot": "13",
+    "kind": "quiz",
+    "angle": "quiz",
+    "tpl": "most_points",
+    "tpl2": "qt_e",
+    "teams": [
+      98,
+      64,
+      109,
+      78
+    ],
+    "match": null,
+    "title": "Guess before the timer ends ⏱️ Which club has the most points? #Shorts"
   }
 ]
