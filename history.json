@@ -858,5 +858,20 @@
     ],
     "match": null,
     "title": "Guess before the timer ends ⏱️ Which club has the most points? #Shorts"
+  },
+  {
+    "date": "2026-11-22",
+    "pub": "2026-11-23",
+    "slot": "23",
+    "kind": "recap",
+    "angle": "comeback",
+    "tpl": "cb3",
+    "tpl2": null,
+    "teams": [
+      81,
+      94
+    ],
+    "match": 564749,
+    "title": "Barcelona turn it around against Villarreal #Shorts"
   }
 ]
