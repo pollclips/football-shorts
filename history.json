@@ -873,5 +873,22 @@
     ],
     "match": 564749,
     "title": "Barcelona turn it around against Villarreal #Shorts"
+  },
+  {
+    "date": "2026-11-24",
+    "pub": "2026-11-24",
+    "slot": "13",
+    "kind": "quiz",
+    "angle": "quiz",
+    "tpl": "best_gd",
+    "tpl2": "qt_c",
+    "teams": [
+      113,
+      65,
+      61,
+      108
+    ],
+    "match": null,
+    "title": "Can you guess? Which club has the best goal difference? #Shorts"
   }
 ]
