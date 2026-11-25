@@ -890,5 +890,20 @@
     ],
     "match": null,
     "title": "Can you guess? Which club has the best goal difference? #Shorts"
+  },
+  {
+    "date": "2026-11-24",
+    "pub": "2026-11-24",
+    "slot": "23",
+    "kind": "recap",
+    "angle": "perfect_run",
+    "tpl": "pr1",
+    "tpl2": null,
+    "teams": [
+      86,
+      674
+    ],
+    "match": 575397,
+    "title": "Real Madrid make it 5 from 5 🔥 #Shorts"
   }
 ]
