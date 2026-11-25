@@ -905,5 +905,22 @@
     ],
     "match": 575397,
     "title": "Real Madrid make it 5 from 5 🔥 #Shorts"
+  },
+  {
+    "date": "2026-11-25",
+    "pub": "2026-11-25",
+    "slot": "13",
+    "kind": "quiz",
+    "angle": "quiz",
+    "tpl": "most_draws",
+    "tpl2": "qt_f",
+    "teams": [
+      109,
+      67,
+      524,
+      4
+    ],
+    "match": null,
+    "title": "Juventus vs Newcastle… which club has drawn the most games? #Shorts"
   }
 ]
