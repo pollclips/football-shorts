@@ -937,5 +937,22 @@
     ],
     "match": 575410,
     "title": "Bayern lose to Lille 😳 #Shorts"
+  },
+  {
+    "date": "2026-11-26",
+    "pub": "2026-11-26",
+    "slot": "13",
+    "kind": "quiz",
+    "angle": "quiz",
+    "tpl": "most_lost",
+    "tpl2": "qt_b",
+    "teams": [
+      109,
+      5,
+      78,
+      108
+    ],
+    "match": null,
+    "title": "Only real fans get this right: Which club has lost the most games? #Shorts"
   }
 ]
