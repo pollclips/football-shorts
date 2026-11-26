@@ -922,5 +922,20 @@
     ],
     "match": null,
     "title": "Juventus vs Newcastle… which club has drawn the most games? #Shorts"
+  },
+  {
+    "date": "2026-11-25",
+    "pub": "2026-11-25",
+    "slot": "23",
+    "kind": "recap",
+    "angle": "big_loss",
+    "tpl": "bl1",
+    "tpl2": null,
+    "teams": [
+      521,
+      5
+    ],
+    "match": 575410,
+    "title": "Bayern lose to Lille 😳 #Shorts"
   }
 ]
