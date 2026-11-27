@@ -969,5 +969,22 @@
     ],
     "match": 575411,
     "title": "Full-time: Sporting CP 2–2 Man United #Shorts"
+  },
+  {
+    "date": "2026-11-27",
+    "pub": "2026-11-27",
+    "slot": "13",
+    "kind": "quiz",
+    "angle": "quiz",
+    "tpl": "most_scored",
+    "tpl2": "qt_a",
+    "teams": [
+      113,
+      78,
+      58,
+      66
+    ],
+    "match": null,
+    "title": "Football quiz: which club has scored the most goals? 🤔 #Shorts"
   }
 ]
