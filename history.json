@@ -986,5 +986,20 @@
     ],
     "match": null,
     "title": "Football quiz: which club has scored the most goals? 🤔 #Shorts"
+  },
+  {
+    "date": "2026-11-27",
+    "pub": "2026-11-27",
+    "slot": "23",
+    "kind": "recap",
+    "angle": "big_loss",
+    "tpl": "bl2",
+    "tpl2": null,
+    "teams": [
+      351,
+      61
+    ],
+    "match": 560658,
+    "title": "Nott'm Forest stun Chelsea 3–2 #Shorts"
   }
 ]
